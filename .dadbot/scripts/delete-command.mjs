@@ -5,7 +5,7 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-const url = `https://discord.com/api/v10/applications/${APPLICATION_ID}/guilds/${GUILD_ID}/commands`;
+const url = `https://discord.com/api/v10/applications/${APPLICATION_ID}/commands`;
 
 async function main() {
 	const res = await fetch(url, {
@@ -18,7 +18,7 @@ async function main() {
 	console.log('Current Commands:', data);
 
 	for (const cmd of data) {
-		if (cmd.name === 'helloworld') {
+		if (cmd.name === 'stats') {
 			const deleteUrl = `${url}/${cmd.id}`;
 			console.log(`Deleting command '${cmd.name}' (${cmd.id})...`);
 			const delRes = await fetch(deleteUrl, {
