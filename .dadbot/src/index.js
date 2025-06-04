@@ -1,5 +1,6 @@
 // Import crypto to verify Discord signature
 import { verifyKey } from './verify-discord.js';
+import { quotes } from './quotes.js';
 
 export default {
 	async fetch(request, env, ctx) {
@@ -25,16 +26,87 @@ export default {
 			return Response.json({ type: 1 }); // PONG
 		}
 
-		// Respond to /helloworld command
-		if (interaction.type === 2 && interaction.data.name === 'helloworld') {
+		// Handle /stats command
+		if (interaction.type === 2 && interaction.data.name === 'stats') {
+			const typeOption = interaction.data.options?.find((opt) => opt.name === 'type');
+			const typeValue = typeOption?.value || 'community';
+
+			// Fetch the JSON
+			const statsUrl = 'https://www.helldads.org/data/stats.json';
+			let stats;
+			try {
+				const res = await fetch(statsUrl);
+				stats = await res.json();
+			} catch (err) {
+				return Response.json({
+					type: 4,
+					data: {
+						content: 'Could not fetch community stats. Please try again later.',
+					},
+				});
+			}
+
+			// Format output
+			let message = '';
+			const unixTimestamp = Math.floor(new Date(stats.lastUpdated).getTime() / 1000);
+			switch (typeValue) {
+				case 'community':
+					message =
+						`**HellDads Community Stats**\n\n` +
+						`Reddit: ${stats.reddit.subscribers} subscribers, ${stats.reddit.active_user_count} active users\n` +
+						`Discord: ${stats.discord.approximate_member_count} members, ${stats.discord.approximate_presence_count} online\n` +
+						`YouTube: ${stats.youtube.subscriber_count} subscribers, ${stats.youtube.video_count} videos\n\n` +
+						`Last updated: <t:${unixTimestamp}:R>`;
+					break;
+
+				case 'reddit':
+					message =
+						`**HellDads Reddit Stats**\n` +
+						`Subscribers: ${stats.reddit.subscribers}\n` +
+						`Active users: ${stats.reddit.active_user_count}\n\n` +
+						`Last updated: <t:${unixTimestamp}:R>`;
+					break;
+
+				case 'discord':
+					message =
+						`**HellDads Discord Stats**\n` +
+						`Members: ${stats.discord.approximate_member_count}\n` +
+						`Online: ${stats.discord.approximate_presence_count}\n\n` +
+						`Last updated: <t:${unixTimestamp}:R>`;
+					break;
+
+				case 'youtube':
+					message =
+						`**HellDads YouTube Stats**\n` +
+						`Subscribers: ${stats.youtube.subscriber_count}\n` +
+						`Videos: ${stats.youtube.video_count}\n\n` +
+						`Last updated: <t:${unixTimestamp}:R>`;
+					break;
+
+				default:
+					message = 'Unknown type.';
+			}
+
 			return Response.json({
 				type: 4, // CHANNEL_MESSAGE_WITH_SOURCE
 				data: {
-					content: 'Hello, world! 🌍',
+					content: message,
 				},
 			});
 		}
 
+		// Handle /quote-of-the-day command
+		if (interaction.type === 2 && interaction.data.name === 'quote-of-the-day') {
+			const randomIndex = Math.floor(Math.random() * quotes.length);
+			const randomQuote = quotes[randomIndex];
+
+			return Response.json({
+				type: 4,
+				data: {
+					content: `🗨️ *"${randomQuote}"*`,
+				},
+			});
+		}
 		return new Response('Unhandled request', { status: 400 });
 	},
 };
