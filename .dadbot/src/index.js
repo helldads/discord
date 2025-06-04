@@ -35,10 +35,9 @@ export default {
 			const typeValue = typeOption?.value || 'community';
 
 			// Fetch the JSON
-			const statsUrl = 'https://www.helldads.org/data/stats.json';
 			let stats;
 			try {
-				const res = await fetch(statsUrl);
+				const res = await fetch(env.HELLDADS_STATS_URL);
 				stats = await res.json();
 			} catch (err) {
 				return Response.json({
