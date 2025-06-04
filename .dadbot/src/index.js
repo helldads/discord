@@ -1,6 +1,9 @@
 // Import crypto to verify Discord signature
 import { verifyKey } from './verify-discord.js';
-import { quotes } from './data/quotes.js';
+import { quotesByAuthor } from './data/quotes.js';
+
+// prepare quotes on worker startup
+const allQuotes = Object.entries(quotesByAuthor).flatMap(([author, quotes]) => quotes.map((text) => ({ text, author })));
 
 export default {
 	async fetch(request, env, ctx) {
@@ -97,13 +100,13 @@ export default {
 
 		// Handle /quote-of-the-day command
 		if (interaction.type === 2 && interaction.data.name === 'quote-of-the-day') {
-			const randomIndex = Math.floor(Math.random() * quotes.length);
-			const randomQuote = quotes[randomIndex];
+			const randomIndex = Math.floor(Math.random() * allQuotes.length);
+			const randomQuote = allQuotes[randomIndex];
 
 			return Response.json({
 				type: 4,
 				data: {
-					content: `🗨️ *"${randomQuote}"*`,
+					content: `🗨️ *"${randomQuote.text}"*\n\n— **${randomQuote.author}**`,
 				},
 			});
 		}
