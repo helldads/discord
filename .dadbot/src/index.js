@@ -1,6 +1,6 @@
 // Import crypto to verify Discord signature
 import { verifyKey } from './verify-discord.js';
-import { quotes } from './quotes.js';
+import { quotes } from './data/quotes.js';
 
 export default {
 	async fetch(request, env, ctx) {
