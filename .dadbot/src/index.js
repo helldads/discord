@@ -1,9 +1,14 @@
-// Import crypto to verify Discord signature
+// discord verification
 import { verifyKey } from './verify-discord.js';
-import { quotesByAuthor } from './data/quotes.js';
 
-// prepare quotes on worker startup
-const allQuotes = Object.entries(quotesByAuthor).flatMap(([author, quotes]) => quotes.map((text) => ({ text, author })));
+// slash commands
+import * as stats from './commands/stats.js';
+import * as quoteOfTheDay from './commands/quote-of-the-day.js';
+
+const commandHandlers = {
+	[stats.command.name]: stats.handler,
+	[quoteOfTheDay.command.name]: quoteOfTheDay.handler,
+};
 
 export default {
 	async fetch(request, env, ctx) {
@@ -29,86 +34,21 @@ export default {
 			return Response.json({ type: 1 }); // PONG
 		}
 
-		// Handle /stats command
-		if (interaction.type === 2 && interaction.data.name === 'stats') {
-			const typeOption = interaction.data.options?.find((opt) => opt.name === 'type');
-			const typeValue = typeOption?.value || 'community';
-
-			// Fetch the JSON
-			let stats;
-			try {
-				const res = await fetch(env.HELLDADS_STATS_URL);
-				stats = await res.json();
-			} catch (err) {
+		// Handle commands
+		if (interaction.type === 2) {
+			// ApplicationCommand
+			const name = interaction.data.name;
+			const handler = commandHandlers[name];
+			if (handler) {
+				return await handler(interaction, env, ctx);
+			} else {
 				return Response.json({
 					type: 4,
-					data: {
-						content: 'Could not fetch community stats. Please try again later.',
-					},
+					data: { content: 'Command not found.' },
 				});
 			}
-
-			// Format output
-			let message = '';
-			const unixTimestamp = Math.floor(new Date(stats.lastUpdated).getTime() / 1000);
-			switch (typeValue) {
-				case 'community':
-					message =
-						`**HellDads Community Stats**\n\n` +
-						`Reddit: ${stats.reddit.subscribers} subscribers, ${stats.reddit.active_user_count} active users\n` +
-						`Discord: ${stats.discord.approximate_member_count} members, ${stats.discord.approximate_presence_count} online\n` +
-						`YouTube: ${stats.youtube.subscriber_count} subscribers, ${stats.youtube.video_count} videos\n\n` +
-						`Last updated: <t:${unixTimestamp}:R>`;
-					break;
-
-				case 'reddit':
-					message =
-						`**HellDads Reddit Stats**\n` +
-						`Subscribers: ${stats.reddit.subscribers}\n` +
-						`Active users: ${stats.reddit.active_user_count}\n\n` +
-						`Last updated: <t:${unixTimestamp}:R>`;
-					break;
-
-				case 'discord':
-					message =
-						`**HellDads Discord Stats**\n` +
-						`Members: ${stats.discord.approximate_member_count}\n` +
-						`Online: ${stats.discord.approximate_presence_count}\n\n` +
-						`Last updated: <t:${unixTimestamp}:R>`;
-					break;
-
-				case 'youtube':
-					message =
-						`**HellDads YouTube Stats**\n` +
-						`Subscribers: ${stats.youtube.subscriber_count}\n` +
-						`Videos: ${stats.youtube.video_count}\n\n` +
-						`Last updated: <t:${unixTimestamp}:R>`;
-					break;
-
-				default:
-					message = 'Unknown type.';
-			}
-
-			return Response.json({
-				type: 4, // CHANNEL_MESSAGE_WITH_SOURCE
-				data: {
-					content: message,
-				},
-			});
 		}
 
-		// Handle /quote-of-the-day command
-		if (interaction.type === 2 && interaction.data.name === 'quote-of-the-day') {
-			const randomIndex = Math.floor(Math.random() * allQuotes.length);
-			const randomQuote = allQuotes[randomIndex];
-
-			return Response.json({
-				type: 4,
-				data: {
-					content: `🗨️ *"${randomQuote.text}"*\n\n— **${randomQuote.author}**`,
-				},
-			});
-		}
 		return new Response('Unhandled request', { status: 400 });
 	},
 };
