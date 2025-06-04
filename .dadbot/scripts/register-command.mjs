@@ -1,19 +1,32 @@
-import 'dotenv/config'; // Automatically loads .env, .dev.vars, etc.
+import 'dotenv/config';
 import fetch from 'node-fetch';
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
+const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-const url = `https://discord.com/api/v10/applications/${APPLICATION_ID}/commands`;
+const url = `https://discord.com/api/v10/applications/${APPLICATION_ID}/guilds/${GUILD_ID}/commands`;
 
 const command = {
-	name: 'helloworld',
-	description: 'Replies with Hello World!',
-	type: 1, // Chat Input
+	name: 'stats',
+	description: 'Displays HellDads community stats',
+	options: [
+		{
+			name: 'type',
+			description: 'Which stats to display (optional)',
+			type: 3, // STRING
+			required: false, // ← now optional
+			choices: [
+				{ name: 'community', value: 'community' },
+				{ name: 'reddit', value: 'reddit' },
+				{ name: 'discord', value: 'discord' },
+				{ name: 'youtube', value: 'youtube' },
+			],
+		},
+	],
 };
 
 async function main() {
-	console.log(DISCORD_TOKEN, APPLICATION_ID);
 	const res = await fetch(url, {
 		method: 'POST',
 		headers: {
