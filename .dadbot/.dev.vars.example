@@ -1,3 +1,8 @@
 # See https://discord.com/developers/applications/
+DISCORD_APPLICATION_ID=""
+DISCORD_GUILD_ID=""
+DISCORD_MODS_ROLE_ID=""
 DISCORD_PUBLIC_KEY=""
+DISCORD_SUPPORT_CATEGORY_ID=""
+DISCORD_TOKEN=""
 HELLDADS_STATS_URL="https://www.helldads.org/data/stats.json"
