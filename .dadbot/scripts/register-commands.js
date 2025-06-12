@@ -3,7 +3,8 @@ import fetch from 'node-fetch';
 
 import * as stats from '../src/commands/stats.js';
 import * as quoteOfTheDay from '../src/commands/quote-of-the-day.js';
-const commands = [stats.command, quoteOfTheDay.command];
+import * as modHelp from '../src/commands/modhelp.js';
+const commands = [stats.command, quoteOfTheDay.command, modHelp.command];
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
