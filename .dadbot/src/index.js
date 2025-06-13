@@ -7,9 +7,9 @@ import * as quoteOfTheDay from './commands/quote-of-the-day.js';
 import * as modHelp from './commands/modhelp.js';
 
 const commandHandlers = {
-        [stats.command.name]: stats.handler,
-        [quoteOfTheDay.command.name]: quoteOfTheDay.handler,
-        [modHelp.command.name]: modHelp.handler,
+	[stats.command.name]: stats.handler,
+	[quoteOfTheDay.command.name]: quoteOfTheDay.handler,
+	[modHelp.command.name]: modHelp.handler,
 };
 
 export default {

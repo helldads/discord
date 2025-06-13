@@ -1,5 +1,5 @@
-// Source: https://en.wikiquote.org/wiki/Helldivers_2
 export const quotesByAuthor = {
+	// Source: https://en.wikiquote.org/wiki/Helldivers_2
 	'Democracy Officer': [
 		'Greetings, Helldiver. The Galactic War awaits.',
 		"You're here. The Galaxy awaits your salvation.",
@@ -65,6 +65,7 @@ export const quotesByAuthor = {
 		'There is but one assured path to peace... and that path is war.',
 	],
 
+	// Source: https://en.wikiquote.org/wiki/Helldivers_2
 	'Ship Master': [
 		'Welcome aboard, Helldiver, and congratulations on completing your training.',
 		'The Galactic War needs you.',
@@ -114,6 +115,7 @@ export const quotesByAuthor = {
 		'I give every crew member a half-day off on Liberty Day. Some things are sacred, even on the front.',
 	],
 
+	// Source: https://en.wikiquote.org/wiki/Helldivers_2
 	'Service Technician': [
 		"You're doing Democracy's work.",
 		'Proud to serve by your side, sir.',
@@ -155,6 +157,7 @@ export const quotesByAuthor = {
 		"Our ancestors fought for the Liberty we have today...and now we're the ones doing the fighting. Kind of makes you proud, doesn't it?",
 	],
 
+	// Source: https://en.wikiquote.org/wiki/Helldivers_2
 	'General Brasch': [
 		"BRASCH TACTICS! Use 'em or die tryin'!",
 		"Atten-hut! I'm General Brasch—Super Earth's oldest and most grizzled war hero, and I'm not easy to impress. Helldiver Training is the toughest test in the galaxy—but I can tell that doesn't scare you. Impressive! Now, enough jibjab! The upcoming obstacles will take everything your exceptional physique can muster. This is it. The real deal. Get to it, soldier!",
@@ -162,5 +165,45 @@ export const quotesByAuthor = {
 		'Young bucks always think they\'re invincible. And while they are mostly right, the fact of the matter is that Helldivers with broken arms cannot aim! Helldivers with broken legs cannot run! And Helldivers with serious injuries to their vital organs will bleed out before they can say "Death to my enemies!" So next time you find yourself unable to run, aim or stay alive, stick yourself with a STIM, soldier!',
 		"No Helldiver can Liberate the galaxy alone. That's why we have team weapons! One Helldiver shoots; another reloads. Together, they create an unstoppable path of wanton Liberation! And don't worry, one stratagem comes with both weapon and pack. That's a 2-in-1 combo, soldier!",
 		"You will get shot at. But remember your ABCs and you will never die. Always. Be. Taking Cover. Because if there's one thing I've learned, it's that bullets do not go through cover... assuming that cover is thick and largely impenetrable.",
+	],
+
+	// Source: https://discord.gg/helldads
+	'Barbaros Facts': [
+		'Barbaros can kill a bile titan by just giving him a smirk. I saw him do it once.',
+		'Barbaros can kill a factory strider with a stim pistol.',
+		'Barbaros doesn’t need stims, stims need Barbaros to stay alive.',
+		'Barbaros doesn’t complete objectives, they complete themselves out of fear.',
+		'I once saw Barbaros glance at an Alpha Commander, and it turned into a Beta Commander.',
+		'Barbaros once dove on a planet armed with a Senator and a single bullet. Using the bullet, he slew 3 devastators, 2 berserkers, and a commisar. Then he loaded it into the Senator and fired.',
+		'Barbaros built the SEAF training facility he was trained at.',
+		"When Barbaros is deployed in a hellpod, his ship doesn't launch him down to the planet. It instead moves the planet to the hellpod with Barbaros in it.",
+		"Democracy Officers don't check for Barbaros committing treasonous activity and anti-democratic thoughts, they check themselves for anti-Barbaros thoughts and activity.",
+		'When Barbaros goes to complete a "Raise The Flag" objective, the bots, bugs, and squids all salute the flag and sit in reverence until he is finished.',
+		"Barbaros doesn't use a hellpod. He merely straps a 380 to his forehead and dives towards the planet in the hopes he can headbutt a bile titan into oblivion.",
+		'Barbaros was once asked to launch an ICBM at the enemy. He went to the terminal and told it about how he was disappointed in it. The missile opened up its doors, fueled itself up, launched itself, and then detonated with 20x the force of the normal ICBM, all to try to make up for the folly of being a disappointment.',
+		"It doesn't matter what shells Barbaros loads into a SEAF artillery. They always behave in exactly the manner that Barbaros needs them to, every time.",
+		"Barbaros doesn't encounter Stalker lairs. Stalkers encounter Barbaros lairs.",
+		"Barbaros doesn't pay for warbonds. Super Earth pays him to use them.",
+		'A bile titan once vomited all over Barbaros. After valiantly hanging on for four long days, covered in massive acid burns, and despite the best medical technology available to Super Earth, the Bile Titan finally died.',
+		"Barbaros died more than twenty operations ago. Death hasn't built up the courage to tell him yet.",
+		'Barbaros farted once during a mission. The aftermath directly inspired an attempt to replicate it, called the TCS.',
+		"Every fiber of Barbaros' being radiates pure unrestricted Democracy. If you were to feed a single beard hair to a charger, that lone charger would liberate the entire planet by itself.",
+		'The mere presence of Barbaros in a sector invaded by the Illuminate is enough to restore the votes to the Voteless',
+		'Barbaros once punched a factory strider and it started making kittens instead of devastators.',
+		'I once saw Barbaros point his finger at a factory strider and say "bang" and it exploded.',
+		"Barbaros isn't afraid of factory striders because he trains them like Cesar Millan for fun.",
+		'Once Barbaros and his squad were completely surrounded by hordes of bugs, and they ran out of ammo. Unfazed, Barbaros aimed his Senator and yelled "Bang!" And the alpha commander fell over dead. Shocked, the squad started yelling "Bang! Bang! BANGBANGBANG!" and bugs started falling over right and left. One squad member even reported seeing Barbaros mime pulling a pin and yelling "Grenade!" Before witnessing a crowd of scavs go flying.',
+		'The Super Earth Anthem was originally just the sound of Barbaros snoring.',
+		"Barbaros isn't infused with the spirits of John Helldiver and General Brasch, John Helldiver and General Brasch are infused with the spirits of Barbaros.",
+		'Helldivers use Brasch tactics. General Brasch uses Barbaros tactics.',
+		"Wait a minute, this is a non-canon event. Barbaros doesn't look for groups, groups look for him!",
+		'Scientists are currently postulating a theory that the gloom is in fact an allergic reaction the bugs are having to the presence of Barbaros.',
+		'Barbaros has so much patience, the entire medical field is out of a job.',
+		"Barbaros doesn't eat Peanut Butter and Jelly. His sandwiches are layered with the dashed hopes and dreams of the enemy, and the patriotically joyful tears of the democratic who witness his glory.",
+		"Barbaros makes his own Jam, but he doesn't rely on pectin, the fruit juice just naturally becomes jam just from being in his presence.",
+		'Barbaros said: I did my first one last night. I felt like a professional athlete weaving through an ever growing horde of middle schoolers. They are no match.',
+		"Barbaros doesn't hold the line, when he dives, the squids are the one trying to hold the line.",
+		'Malevelon Creek was liberated the same day Barbaros started his career. Coincidence?',
+		"Barbaros isn't a bad ass, that is treasonous speech. Instead, he takes all that is bad, and makes is good, and all that is good, and makes it great, and all that is great becomes awesome.",
 	],
 };
