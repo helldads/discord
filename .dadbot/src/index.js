@@ -4,6 +4,7 @@ import { verifyKey } from './verify-discord.js';
 // slash commands
 import * as stats from './commands/stats.js';
 import * as quoteOfTheDay from './commands/quote-of-the-day.js';
+import { getRandomQuote, formatQuote } from './commands/quote-of-the-day.js';
 import * as modHelp from './commands/modhelp.js';
 
 const commandHandlers = {
@@ -13,6 +14,7 @@ const commandHandlers = {
 };
 
 export default {
+	// FETCH http request handler
 	async fetch(request, env, ctx) {
 		if (request.method !== 'POST') {
 			return new Response('Expected POST', { status: 405 });
@@ -52,5 +54,31 @@ export default {
 		}
 
 		return new Response('Unhandled request', { status: 400 });
+	},
+
+	// SCHEDULED cron request handler
+	async scheduled(controller, env, ctx) {
+		// Post a quote of the day into a discord channel
+		const token = env.DISCORD_TOKEN;
+		const channelId = env.DISCORD_QUOTE_CHANNEL_ID;
+
+		if (!token || !channelId) {
+			console.error('Missing DISCORD_TOKEN or DISCORD_QUOTE_CHANNEL_ID');
+			return;
+		}
+		try {
+			const quote = getRandomQuote();
+			const message = formatQuote(quote);
+			await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bot ${token}`,
+				},
+				body: JSON.stringify({ content: message }),
+			});
+		} catch (err) {
+			console.error('Failed to post daily quote', err);
+		}
 	},
 };

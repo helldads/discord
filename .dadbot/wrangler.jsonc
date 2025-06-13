@@ -6,7 +6,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "dadbot",
 	"main": "src/index.js",
-	"compatibility_date": "2025-06-04",
+	"compatibility_date": "2025-05-25",
 	/*	"migrations": [
 		{
 			"new_sqlite_classes": [
@@ -25,6 +25,9 @@
 	},*/
 	"observability": {
 		"enabled": true,
+	},
+	"triggers": {
+		"crons": ["0 12 * * *"], // daily at noon
 	},
 	/**
 	 * Smart Placement
