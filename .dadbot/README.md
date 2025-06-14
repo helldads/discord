@@ -6,9 +6,10 @@ This worker handles slash commands for the Helldads Discord server.
 
 The bot currently implements the following slash commands:
 
-- `/stats` – Display community statistics gathered from Helldads services.
-- `/quote-of-the-day` – Post a random Helldivers quote.
+- `/help` – Display an overview of commands and useful channels.
 - `/modhelp` – Open a private support channel and ping the mods.
+- `/quote-of-the-day` – Post a random Helldivers quote.
+- `/stats` – Display community statistics gathered from Helldads services.
 
 ## Events
 
