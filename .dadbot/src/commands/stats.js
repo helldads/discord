@@ -11,6 +11,7 @@ export const command = {
 				{ name: 'all', value: 'all' },
 				{ name: 'reddit', value: 'reddit' },
 				{ name: 'discord', value: 'discord' },
+				{ name: 'tiktok', value: 'tiktok' },
 				{ name: 'youtube', value: 'youtube' },
 			],
 		},
@@ -42,34 +43,43 @@ export async function handler(interaction, env, ctx) {
 		case 'all':
 			message =
 				`**HellDads Community Stats**\n\n` +
-				`Reddit: ${stats.reddit.subscribers} subscribers, ${stats.reddit.active_user_count} active users\n` +
-				`Discord: ${stats.discord.approximate_member_count} members, ${stats.discord.approximate_presence_count} online\n` +
-				`YouTube: ${stats.youtube.subscriber_count} subscribers, ${stats.youtube.video_count} videos\n\n` +
-				`Last updated: <t:${unixTimestamp}:R>`;
+				`[Reddit](<https://reddit.com/r/HellDads>): ${stats.reddit.subscribers} subscribers, ${stats.reddit.active_user_count} active users\n` +
+				`[Discord](<https://tinyurl.com/discord-helldads>): ${stats.discord.approximate_member_count} members, ${stats.discord.approximate_presence_count} online\n` +
+				`[TikTok](<https://www.tiktok.com/@helldads>): ${stats.tiktok.follower_count} followers, ${stats.tiktok.video_count} videos\n` +
+				`[YouTube](<https://www.youtube.com/@HellDadsHQ>): ${stats.youtube.subscriber_count} subscribers, ${stats.youtube.video_count} videos\n\n` +
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
 			break;
 
 		case 'reddit':
 			message =
-				`**HellDads Reddit Stats**\n` +
+				`**HellDads [Reddit](<https://reddit.com/r/HellDads>) Stats**\n` +
 				`Subscribers: ${stats.reddit.subscribers}\n` +
 				`Active users: ${stats.reddit.active_user_count}\n\n` +
-				`Last updated: <t:${unixTimestamp}:R>`;
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
 			break;
 
 		case 'discord':
 			message =
-				`**HellDads Discord Stats**\n` +
+				`**HellDads [Discord](<https://tinyurl.com/discord-helldads>) Stats**\n` +
 				`Members: ${stats.discord.approximate_member_count}\n` +
 				`Online: ${stats.discord.approximate_presence_count}\n\n` +
-				`Last updated: <t:${unixTimestamp}:R>`;
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
+			break;
+
+		case 'tiktok':
+			message =
+				`**HellDads [TikTok](<https://www.tiktok.com/@helldads>) Stats**\n` +
+				`Follower: ${stats.tiktok.follower_count}\n` +
+				`Videos: ${stats.tiktok.video_count}\n\n` +
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
 			break;
 
 		case 'youtube':
 			message =
-				`**HellDads YouTube Stats**\n` +
+				`**HellDads [YouTube](<https://www.youtube.com/@HellDadsHQ>) Stats**\n` +
 				`Subscribers: ${stats.youtube.subscriber_count}\n` +
 				`Videos: ${stats.youtube.video_count}\n\n` +
-				`Last updated: <t:${unixTimestamp}:R>`;
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
 			break;
 
 		default:
