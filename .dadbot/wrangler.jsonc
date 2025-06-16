@@ -35,6 +35,7 @@
 			"binding": "STATISTICS_DB",
 			"database_name": "helldads-statistics",
 			"database_id": "3be85c8a-0a4a-4f0c-89a7-feb1908d2a97",
+			"migrations_dir": "./migrations",
 		},
 	],
 	/**

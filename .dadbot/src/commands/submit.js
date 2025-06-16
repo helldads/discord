@@ -53,8 +53,10 @@ function parseData(values) {
 	return { data };
 }
 
-function formatData(data) {
-	const lines = Object.entries(data).map(([k, v]) => `**${k}**: ${v}`);
+function formatData(data, omit = []) {
+	const lines = Object.entries(data)
+		.filter(([k, v]) => v !== undefined && v !== null && !omit.includes(k))
+		.map(([k, v]) => `**${k}**: ${v}`);
 	return lines.length > 0 ? lines.join('\n') : 'No data provided.';
 }
 
@@ -78,31 +80,50 @@ export async function handler(interaction, env, ctx) {
 		columns.push(key);
 		values.push(value);
 	}
-	const placeholders = columns.map(() => '?').join(', ');
-	const smSql = `INSERT INTO submissions (${columns.join(', ')}) VALUES (${placeholders});`;
-	const updates = columns
-		.slice(1)
-		.map((c) => `${c} = excluded.${c}`)
-		.join(', ');
-	const hsSql = `INSERT INTO highscores(${columns.join(', ')}) VALUES (${placeholders}) ` + `ON CONFLICT(user) DO UPDATE SET ${updates}`;
 
-	//const hsSql = `REPLACE INTO highscores (${columns.join(', ')}) VALUES (${placeholders});`;
+	// Only update when new data has been provided
+	if (columns.length > 2) {
+		const placeholders = columns.map(() => '?').join(', ');
+		const smSql = `INSERT INTO submissions (${columns.join(', ')}) VALUES (${placeholders});`;
+		const updates = columns
+			.slice(1)
+			.map((c) => `${c} = excluded.${c}`)
+			.join(', ');
+		const hsSql = `INSERT INTO highscores(${columns.join(', ')}) VALUES (${placeholders}) ` + `ON CONFLICT(user) DO UPDATE SET ${updates}`;
 
-	try {
-		const stmtSubmission = env.STATISTICS_DB.prepare(smSql).bind(...values);
-		const stmtHighscore = env.STATISTICS_DB.prepare(hsSql).bind(...values);
-		// batch executes statements in a transaction
-		await env.STATISTICS_DB.batch([stmtSubmission, stmtHighscore]);
-	} catch (err) {
-		console.error('Error writing to D1', err);
-		return Response.json({
-			type: 4,
-			data: { content: 'Failed to store data.', flags: 64 },
-		});
+		try {
+			const stmtSubmission = env.STATISTICS_DB.prepare(smSql).bind(...values);
+			const stmtHighscore = env.STATISTICS_DB.prepare(hsSql).bind(...values);
+			// batch executes statements in a transaction
+			await env.STATISTICS_DB.batch([stmtSubmission, stmtHighscore]);
+		} catch (err) {
+			console.error('Error writing to database', err);
+			return Response.json({
+				type: 4,
+				data: { content: 'Failed to store data.', flags: 64 },
+			});
+		}
 	}
+
+	// fetch the highscore for this user
+	let highscore = null;
+	try {
+		const res = await env.STATISTICS_DB.prepare('SELECT * FROM highscores WHERE user = ?').bind(userId).all();
+		if (res?.results?.length) {
+			highscore = res.results[0];
+		}
+	} catch (err) {
+		console.error('Error reading from database', err);
+	}
+
+	const changed = formatData(data);
+	const summary = highscore ? formatData(highscore, ['user']) : 'No highscore found.';
 
 	return Response.json({
 		type: 4,
-		data: { content: formatData(data), flags: 64 },
+		data: {
+			content: `**Updated Values**\n${changed}\n\n**Current Highscore**\n${summary}`,
+			flags: 64,
+		},
 	});
 }
