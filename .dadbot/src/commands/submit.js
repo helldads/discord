@@ -68,6 +68,30 @@ export async function handler(interaction, env, ctx) {
 			data: { content: `Error: ${error}`, flags: 64 },
 		});
 	}
+	const userId = interaction.member?.user?.id || interaction.user?.id || '';
+	const now = new Date().toISOString();
+
+	// build insert statement dynamically so unspecified fields remain NULL
+	const columns = ['discord_user', 'date', 'verified'];
+	const values = [userId, now, false];
+	for (const [key, value] of Object.entries(data)) {
+		columns.push(key);
+		values.push(value);
+	}
+	const placeholders = columns.map(() => '?').join(', ');
+	const sql = `INSERT INTO submission (${columns.join(', ')}) VALUES (${placeholders})`;
+
+	try {
+		const stmt = env.STATISTICS_DB.prepare(sql).bind(...values);
+		// batch executes statements in a transaction
+		await env.STATISTICS_DB.batch([stmt]);
+	} catch (err) {
+		console.error('Error writing to D1', err);
+		return Response.json({
+			type: 4,
+			data: { content: 'Failed to store data.', flags: 64 },
+		});
+	}
 
 	return Response.json({
 		type: 4,

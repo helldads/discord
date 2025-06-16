@@ -29,3 +29,13 @@ The following environment variables must be provided:
 - `HELLDADS_STATS_URL` – URL to the JSON with community stats.
 
 See `.env.example` and `.dev.vars.example` for example values.
+
+## Database Setup
+
+This project uses a Cloudflare D1 database called `helldads-statistics`. After creating the binding in `wrangler.jsonc`, run the migrations to set up the schema:
+
+```bash
+npx wrangler d1 migrations apply helldads-statistics
+```
+
+This will create the `changeset` table used by the `/submit` command.
