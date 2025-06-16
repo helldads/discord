@@ -21,8 +21,10 @@ export async function handler(interaction, env, ctx) {
 		'• `/modhelp` – Open a private support channel with the mods.',
 		'• `/quote-of-the-day` – Post a random Helldivers quote.',
 		'• `/stats` – Display community statistics.',
+		//		'• `/submit` – Report your own game statistics. ',
 		'• `/help` – Show this help message.',
 	];
+
 	const message = lines.join('\n');
 	return Response.json({
 		type: 4,

@@ -5,7 +5,8 @@ import * as stats from '../src/commands/stats.js';
 import * as quoteOfTheDay from '../src/commands/quote-of-the-day.js';
 import * as modHelp from '../src/commands/modhelp.js';
 import * as help from '../src/commands/help.js';
-const commands = [stats.command, quoteOfTheDay.command, modHelp.command, help.command];
+import * as submit from '../src/commands/submit.js';
+const commands = [stats.command, quoteOfTheDay.command, modHelp.command, help.command, submit.command];
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;

@@ -6,15 +6,17 @@ import * as stats from './commands/stats.js';
 import * as quoteOfTheDay from './commands/quote-of-the-day.js';
 import * as modHelp from './commands/modhelp.js';
 import * as help from './commands/help.js';
+import * as submit from './commands/submit.js';
 
 // scheduled events
 import * as dailyQuote from './events/daily-quote.js';
 
 const commandHandlers = {
-        [stats.command.name]: stats.handler,
-        [quoteOfTheDay.command.name]: quoteOfTheDay.handler,
-        [modHelp.command.name]: modHelp.handler,
-        [help.command.name]: help.handler,
+	[stats.command.name]: stats.handler,
+	[quoteOfTheDay.command.name]: quoteOfTheDay.handler,
+	[modHelp.command.name]: modHelp.handler,
+	[help.command.name]: help.handler,
+	[submit.command.name]: submit.handler,
 };
 
 export default {
@@ -42,9 +44,8 @@ export default {
 			return Response.json({ type: 1 }); // PONG
 		}
 
-		// Handle commands
+		// Handle slash commands
 		if (interaction.type === 2) {
-			// ApplicationCommand
 			const name = interaction.data.name;
 			const handler = commandHandlers[name];
 			if (handler) {

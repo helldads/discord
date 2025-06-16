@@ -27,7 +27,7 @@
 		"enabled": true,
 	},
 	"triggers": {
-		"crons": ["0 12 * * *"], // daily at noon
+		"crons": ["0 17 * * *"], // daily at noon
 	},
 	/**
 	 * Smart Placement
