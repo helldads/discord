@@ -7,6 +7,7 @@ import * as quoteOfTheDay from './commands/quote-of-the-day.js';
 import * as modHelp from './commands/modhelp.js';
 import * as help from './commands/help.js';
 import * as submit from './commands/submit.js';
+import * as highscores from './commands/highscores.js';
 
 // scheduled events
 import * as dailyQuote from './events/daily-quote.js';
@@ -17,6 +18,7 @@ const commandHandlers = {
 	[modHelp.command.name]: modHelp.handler,
 	[help.command.name]: help.handler,
 	[submit.command.name]: submit.handler,
+	[highscores.command.name]: highscores.handler,
 };
 
 export default {

@@ -7,9 +7,11 @@ This worker handles slash commands for the Helldads Discord server.
 The bot currently implements the following slash commands:
 
 - `/help` – Display an overview of commands and useful channels.
+- `/highscores` – Display highscores of all HellDads who /submit their results.
 - `/modhelp` – Open a private support channel and ping the mods.
 - `/quote-of-the-day` – Post a random Helldivers quote.
 - `/stats` – Display community statistics gathered from Helldads services.
+- `/submit` – Share your game statistics for the highscores.
 
 ## Events
 

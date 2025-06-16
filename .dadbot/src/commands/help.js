@@ -21,7 +21,8 @@ export async function handler(interaction, env, ctx) {
 		'• `/modhelp` – Open a private support channel with the mods.',
 		'• `/quote-of-the-day` – Post a random Helldivers quote.',
 		'• `/stats` – Display community statistics.',
-		//		'• `/submit` – Report your own game statistics. ',
+		//'• `/submit` – Share your game statistics for the highscores.',
+		//'• `/highscores` – Display highscores of all HellDads who /submit their results.',
 		'• `/help` – Show this help message.',
 	];
 
