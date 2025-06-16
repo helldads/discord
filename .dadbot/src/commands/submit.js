@@ -1,6 +1,8 @@
 // Slash command for users to submit their personal game stats
 import { statisticsFields } from '../data/statistics.js';
 
+const labels = Object.fromEntries(statisticsFields.map((field) => [field.name, field.label]));
+
 export const command = {
 	name: 'submit',
 	description: 'Submit your Helldivers statistics (in development)',
@@ -30,6 +32,12 @@ function parseData(values) {
 				if (!Number.isInteger(n)) {
 					return { error: `${field.label} must be an integer.` };
 				}
+				if (field.min !== undefined && n < field.min) {
+					return { error: `${field.label} must be at least ${field.min}.` };
+				}
+				if (field.max !== undefined && n > field.max) {
+					return { error: `${field.label} must be at most ${field.max}.` };
+				}
 				data[field.name] = n;
 			} else if (field.type === 'date') {
 				if (typeof val !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(val)) {
@@ -56,7 +64,10 @@ function parseData(values) {
 function formatData(data, omit = []) {
 	const lines = Object.entries(data)
 		.filter(([k, v]) => v !== undefined && v !== null && !omit.includes(k))
-		.map(([k, v]) => `**${k}**: ${v}`);
+		.map(([k, v]) => {
+			const label = labels[k] ?? k; // Fallback to key if no label found
+			return `**${label}**: ${v}`;
+		});
 	return lines.length > 0 ? lines.join('\n') : 'No data provided.';
 }
 
@@ -117,7 +128,7 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const changed = formatData(data);
-	const summary = highscore ? formatData(highscore, ['user']) : 'No highscore found.';
+	const summary = highscore ? formatData(highscore, ['user', 'date', 'verified']) : 'No highscore found.';
 
 	return Response.json({
 		type: 4,
