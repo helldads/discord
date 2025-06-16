@@ -35,6 +35,15 @@ function parseData(values) {
 				if (typeof val !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(val)) {
 					return { error: `${field.label} must be in yyyy-mm-dd format.` };
 				}
+				// ensure the date is valid and not before game launch
+				const date = new Date(`${val}T00:00:00Z`);
+				if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== val) {
+					return { error: `${field.label} is not a valid date.` };
+				}
+				const earliest = new Date('2024-02-08T00:00:00Z');
+				if (date < earliest) {
+					return { error: `${field.label} cannot be before Helldivers 2 release date on 2024-02-08.` };
+				}
 				data[field.name] = val;
 			} else {
 				data[field.name] = String(val);
