@@ -68,23 +68,31 @@ export async function handler(interaction, env, ctx) {
 			data: { content: `Error: ${error}`, flags: 64 },
 		});
 	}
-	const userId = interaction.member?.user?.id || interaction.user?.id || '';
+	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const now = new Date().toISOString();
 
 	// build insert statement dynamically so unspecified fields remain NULL
-	const columns = ['discord_user', 'date', 'verified'];
-	const values = [userId, now, false];
+	const columns = ['user', 'date'];
+	const values = [userId, now];
 	for (const [key, value] of Object.entries(data)) {
 		columns.push(key);
 		values.push(value);
 	}
 	const placeholders = columns.map(() => '?').join(', ');
-	const sql = `INSERT INTO submission (${columns.join(', ')}) VALUES (${placeholders})`;
+	const smSql = `INSERT INTO submissions (${columns.join(', ')}) VALUES (${placeholders});`;
+	const updates = columns
+		.slice(1)
+		.map((c) => `${c} = excluded.${c}`)
+		.join(', ');
+	const hsSql = `INSERT INTO highscores(${columns.join(', ')}) VALUES (${placeholders}) ` + `ON CONFLICT(user) DO UPDATE SET ${updates}`;
+
+	//const hsSql = `REPLACE INTO highscores (${columns.join(', ')}) VALUES (${placeholders});`;
 
 	try {
-		const stmt = env.STATISTICS_DB.prepare(sql).bind(...values);
+		const stmtSubmission = env.STATISTICS_DB.prepare(smSql).bind(...values);
+		const stmtHighscore = env.STATISTICS_DB.prepare(hsSql).bind(...values);
 		// batch executes statements in a transaction
-		await env.STATISTICS_DB.batch([stmt]);
+		await env.STATISTICS_DB.batch([stmtSubmission, stmtHighscore]);
 	} catch (err) {
 		console.error('Error writing to D1', err);
 		return Response.json({

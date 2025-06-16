@@ -38,4 +38,7 @@ This project uses a Cloudflare D1 database called `helldads-statistics`. After c
 npx wrangler d1 migrations apply helldads-statistics
 ```
 
-This will create the `changeset` table used by the `/submit` command.
+This command applies all SQL migrations and creates the `submission` table used by the `/submit` command.
+
+It also creates the `highscore` table which stores one record per user and is
+automatically updated when a new submission is stored.

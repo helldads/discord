@@ -1,10 +1,9 @@
-CREATE TABLE IF NOT EXISTS submission (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    discord_user TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS highscores(
+    user TEXT PRIMARY KEY,
     date DATE NOT NULL,
     verified BOOLEAN DEFAULT FALSE,
     name TEXT,
-    enlist_date TEXT,
+    enlist_date DATE,
     max_kills INTEGER,
     max_friendly_fire INTEGER,
     friends INTEGER,
