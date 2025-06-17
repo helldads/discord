@@ -1,7 +1,15 @@
 import { statisticsFields } from '../data/statistics.js';
 
+// Map field names to human readable labels for formatting output
 const labels = Object.fromEntries(statisticsFields.map((f) => [f.name, f.label]));
 
+/**
+ * Convert a data object into a multi-line string.
+ *
+ * @param {Object} data - Raw data keyed by field name.
+ * @param {string[]} [omit=[]] - Keys to ignore when generating output.
+ * @returns {string} Formatted lines joined by newlines.
+ */
 export function formatData(data, omit = []) {
 	const lines = Object.entries(data)
 		.filter(([k, v]) => v !== undefined && v !== null && !omit.includes(k))
@@ -12,6 +20,12 @@ export function formatData(data, omit = []) {
 	return lines.length > 0 ? lines.join('\n') : 'No data provided.';
 }
 
+/**
+ * Convert an array of Discord option objects into a name/value map.
+ *
+ * @param {Array<{name: string, value: any}>} options - Option array from an interaction.
+ * @returns {Object} Map with option names as keys.
+ */
 export function gatherOptionValues(options) {
 	const map = {};
 	for (const opt of options || []) {
@@ -19,6 +33,13 @@ export function gatherOptionValues(options) {
 	}
 	return map;
 }
+
+/**
+ * Validate and normalize user provided statistic values.
+ *
+ * @param {Object} values - Map of raw option values keyed by field name.
+ * @returns {{data?: Object, error?: string}} Normalized data or error message.
+ */
 export function parseData(values) {
 	const data = {};
 	for (const field of statisticsFields) {

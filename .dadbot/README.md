@@ -10,7 +10,7 @@ The bot currently implements the following slash commands:
 - `/highscores` – Display highscores of all HellDads who /submit their results. Use `user` to view a specific player's stats.
 - `/modhelp` – Open a private support channel and ping the mods.
 - `/quote-of-the-day` – Post a random Helldivers quote.
-- `/stats` – Display community statistics gathered from Helldads services.
+- `/stats` – Display community statistics gathered from Helldads services with formatted numbers.
 - `/submit` – Share your game statistics for the highscores.
 
 ## Events
@@ -44,3 +44,17 @@ This command applies all SQL migrations and creates the `submission` table used 
 
 It also creates the `highscore` table which stores one record per user and is
 automatically updated when a new submission is stored.
+
+## Development
+
+Install dependencies with `npm install` and run a local worker using:
+
+```bash
+npm run dev
+```
+
+Before testing commands locally, register them with Discord:
+
+```bash
+npm run register-commands
+```
