@@ -1,5 +1,6 @@
 import { statisticsFields } from '../data/statistics.js';
 import { formatData } from '../lib/statistics.js';
+import { formatNumber } from '../lib/format.js';
 
 export const command = {
 	name: 'highscores',
@@ -39,7 +40,8 @@ export async function handler(interaction, env, ctx) {
 			try {
 				const res = await env.STATISTICS_DB.prepare(sql).all();
 				for (const [idx, row] of res?.results?.entries() || []) {
-					lines.push(`${idx + 1}. ${row.val} (${row.name || row.user} | <@${row.user}>)`);
+					let val = field.type === 'int' ? formatNumber(row.val) : row.val;
+					lines.push(`${idx + 1}. ${val} (${row.name || row.user} | <@${row.user}>)`);
 				}
 				if (lines.length) {
 					message = `**Top ${field.label}**\n` + lines.join('\n');
@@ -76,7 +78,8 @@ export async function handler(interaction, env, ctx) {
 				const res = await env.STATISTICS_DB.prepare(sql).all();
 				const row = res?.results?.[0];
 				if (row) {
-					lines.push(`**${field.label}**: ${row.val} (${row.name || row.user} | <@${row.user}>)`);
+					let val = field.type === 'int' ? formatNumber(row.val) : row.val;
+					lines.push(`**${field.label}**: ${val} (${row.name || row.user} | <@${row.user}>)`);
 				}
 			} catch (err) {
 				console.error('Error reading highscores', err);

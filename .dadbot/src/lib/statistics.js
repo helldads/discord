@@ -1,4 +1,5 @@
 import { statisticsFields } from '../data/statistics.js';
+import { formatNumber } from '../lib/format.js';
 
 // Map field names to human readable labels for formatting output
 const labels = Object.fromEntries(statisticsFields.map((f) => [f.name, f.label]));
@@ -15,7 +16,8 @@ export function formatData(data, omit = []) {
 		.filter(([k, v]) => v !== undefined && v !== null && !omit.includes(k))
 		.map(([k, v]) => {
 			const label = labels[k] ?? k;
-			return `**${label}**: ${v}`;
+			const value = !isNaN(v) && !isNaN(parseInt(v)) ? formatNumber(Number(v)) : v;
+			return `**${label}**: ${value}`;
 		});
 	return lines.length > 0 ? lines.join('\n') : 'No data provided.';
 }
