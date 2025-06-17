@@ -24,6 +24,6 @@ export async function handler(interaction, env, ctx) {
 	const message = lines.length ? lines.join('\n') : 'No highscores available.';
 	return Response.json({
 		type: 4,
-		data: { content: message },
+		data: { content: message, flags: 64 },
 	});
 }
