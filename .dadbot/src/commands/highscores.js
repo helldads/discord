@@ -11,15 +11,44 @@ export const command = {
 			type: 3, // STRING
 			required: false,
 		},
+		{
+			name: 'top10',
+			description: 'Top 10 list per category',
+			type: 3, // STRING
+			required: false,
+			choices: statisticsFields
+				.filter((f) => !['user', 'name', 'date', 'verified'].includes(f.name))
+				.map((f) => ({ name: f.label, value: f.name })),
+		},
 	],
 };
 
 export async function handler(interaction, env, ctx) {
 	const userOption = interaction.data.options?.find((o) => o.name === 'user');
 	const userValue = userOption?.value?.trim();
+	const fieldOption = interaction.data.options?.find((o) => o.name === 'top10');
+	const fieldValue = fieldOption?.value;
 	let message = 'No highscores available.';
 
-	if (userValue) {
+	if (fieldValue) {
+		const field = statisticsFields.find((f) => f.name === fieldValue);
+		if (field) {
+			const lines = [];
+			const order = field.name === 'enlist_date' ? 'ASC' : 'DESC';
+			const sql = `SELECT user, name, ${field.name} AS val FROM highscores WHERE ${field.name} IS NOT NULL ORDER BY ${field.name} ${order} LIMIT 10;`;
+			try {
+				const res = await env.STATISTICS_DB.prepare(sql).all();
+				for (const [idx, row] of res?.results?.entries() || []) {
+					lines.push(`${idx + 1}. ${row.val} (${row.name || row.user} | <@${row.user}>)`);
+				}
+				if (lines.length) {
+					message = `**Top ${field.label}**\n` + lines.join('\n');
+				}
+			} catch (err) {
+				console.error('Error reading highscores', err);
+			}
+		}
+	} else if (userValue) {
 		let row = null;
 		try {
 			const match = /^<@!?(\d+)>$/.exec(userValue);
