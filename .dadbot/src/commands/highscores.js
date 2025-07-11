@@ -1,6 +1,6 @@
 import { statisticsFields } from '../data/statistics.js';
 import { formatData } from '../lib/statistics.js';
-import { formatNumber } from '../lib/format.js';
+import { formatNumber, formatDataTable } from '../lib/format.js';
 
 export const command = {
 	name: 'highscores',
@@ -79,14 +79,16 @@ export async function handler(interaction, env, ctx) {
 				const row = res?.results?.[0];
 				if (row) {
 					let val = field.type === 'int' ? formatNumber(row.val) : row.val;
-					lines.push(`**${field.label}**: ${val} (${row.name || row.user} | <@${row.user}>)`);
+					//lines.push(`**${field.label}**: ${val} (${row.name || row.user} | <@${row.user}>)`);
+					lines.push({ label: field.label, value: val, user: row.name || `<@${row.user}>` });
 				}
 			} catch (err) {
 				console.error('Error reading highscores', err);
 			}
 		}
 		if (lines.length) {
-			message = lines.join('\n');
+			// message = lines.join('\n');
+			message = formatDataTable(['label', 'value', 'user'], lines);
 		}
 	}
 	return Response.json({
