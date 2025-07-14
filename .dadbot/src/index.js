@@ -3,7 +3,7 @@ import { verifyKey } from './verify-discord.js';
 
 // slash commands
 import * as stats from './commands/stats.js';
-import * as quoteOfTheDay from './commands/quote-of-the-day.js';
+import * as quote from './commands/quote.js';
 import * as modHelp from './commands/modhelp.js';
 import * as help from './commands/help.js';
 import * as submit from './commands/submit.js';
@@ -14,7 +14,7 @@ import * as dailyQuote from './events/daily-quote.js';
 
 const commandHandlers = {
 	[stats.command.name]: stats.handler,
-	[quoteOfTheDay.command.name]: quoteOfTheDay.handler,
+	[quote.command.name]: quote.handler,
 	[modHelp.command.name]: modHelp.handler,
 	[help.command.name]: help.handler,
 	[submit.command.name]: submit.handler,

@@ -1,4 +1,4 @@
-import { getRandomQuote, formatQuote } from '../commands/quote-of-the-day.js';
+import { getRandomQuote, formatQuote } from '../commands/quote.js';
 
 export async function handler(controller, env, ctx) {
 	const token = env.DISCORD_TOKEN;
@@ -9,7 +9,7 @@ export async function handler(controller, env, ctx) {
 		return;
 	}
 	try {
-		const quote = getRandomQuote();
+		const quote = await getRandomQuote();
 		const message = formatQuote(quote);
 		await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
 			method: 'POST',

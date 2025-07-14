@@ -9,7 +9,7 @@ The bot currently implements the following slash commands:
 - `/help` – Display an overview of commands and useful channels.
 - `/highscores` – Display highscores of all HellDads who /submit their results. Use `user` to view a specific player's stats.
 - `/modhelp` – Open a private support channel and ping the mods.
-- `/quote-of-the-day` – Post a random Helldivers quote.
+- `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from Helldads services with formatted numbers.
 - `/submit` – Share your game statistics for the highscores.
 
