@@ -45,5 +45,5 @@ export function formatDataTable(columns, dataset) {
 }
 
 export function formatQuote(quote) {
-	return `🗨️ *"${quote.quote}"*\n\n— **${quote.author}**`;
+	return `🗨️ *"${quote.text}"*\n\n— **${quote.author}**`;
 }

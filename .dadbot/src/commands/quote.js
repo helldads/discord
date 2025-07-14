@@ -1,49 +1,56 @@
-import { quotesByAuthor } from '../data/quotes.js';
-
-// Flatten all quotes across authors for quick random access
-const allQuotes = Object.entries(quotesByAuthor).flatMap(([author, quotes]) => quotes.map((text) => ({ text, author })));
-
-// Prepare the list of available authors for the slash command choices
-const authorChoices = Object.keys(quotesByAuthor).map((name) => ({ name, value: name }));
-
-export function getRandomQuote(author) {
-	if (author) {
-		const quotes = quotesByAuthor[author];
-		if (Array.isArray(quotes) && quotes.length > 0) {
-			const text = quotes[Math.floor(Math.random() * quotes.length)];
-			return { text, author };
-		}
-	}
-
-	return allQuotes[Math.floor(Math.random() * allQuotes.length)];
-}
-
-export function formatQuote(quote) {
-	return `🗨️ *"${quote.text}"*\n\n— **${quote.author}**`;
-}
+import { formatQuote } from '../lib/format.js';
+import { fetchJsonWithTimeout } from '../lib/fetch.js';
 
 export const command = {
-	name: 'quote-of-the-day',
-	description: 'Receive a random Helldivers quote.',
+	name: 'quote',
+	description: 'Receive a democratic Helldivers quote.',
 	options: [
 		{
-			name: 'author',
-			description: 'Select a specific author (optional)',
+			name: 'category',
+			description: 'Select a specific category (optional)',
 			type: 3,
 			required: false,
-			choices: authorChoices,
+			choices: [
+				{ name: 'any', value: 'any' },
+				{ name: 'Democracy Officer', value: 'democracy_officer' },
+				{ name: 'Ship Master', value: 'ship_master' },
+				{ name: 'Service Technician', value: 'service_technician' },
+				{ name: 'General Brasch', value: 'general_brasch' },
+				{ name: 'Training Manual Tips', value: 'training_manual_tips' },
+				{ name: 'Barbaros Facts', value: 'barbaros_facts' },
+			],
 		},
 	],
 };
 
 export async function handler(interaction, env, ctx) {
-	const authorOption = interaction.data.options?.find((o) => o.name === 'author');
+	try {
+		const quotes = await fetchJsonWithTimeout(env.HELLDADS_QUOTES_ALL_URL);
+		const authorChoices = Object.keys(quotes);
+		const authorOption = interaction.data.options?.find((o) => o.name === 'author');
+		let author = 'any';
 
-	const quote = getRandomQuote(authorOption?.value);
-	const message = formatQuote(quote);
+		if (!authorOption?.value || authorOption.value == author) {
+			author = authorChoices[Math.floor(Math.random() * authorChoices.length)];
+		} else {
+			const choice = command.options[0].choices.find((c) => c.value === authorOption.value);
+			author = choice ? choice.name : '';
+		}
 
-	return Response.json({
-		type: 4,
-		data: { content: message },
-	});
+		const text = quotes[author][Math.floor(Math.random() * quotes[author].length)];
+		const message = { author, text };
+
+		return Response.json({
+			type: 4,
+			data: { content: formatQuote(message) },
+		});
+	} catch (err) {
+		return Response.json({
+			type: 4,
+			data: {
+				content: 'Failed to get a quote.',
+				flags: 64,
+			},
+		});
+	}
 }
