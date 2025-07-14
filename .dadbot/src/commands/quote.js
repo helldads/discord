@@ -26,19 +26,19 @@ export const command = {
 export async function handler(interaction, env, ctx) {
 	try {
 		const quotes = await fetchJsonWithTimeout(env.HELLDADS_QUOTES_ALL_URL);
-		const authorChoices = Object.keys(quotes);
-		const authorOption = interaction.data.options?.find((o) => o.name === 'author');
-		let author = 'any';
+		const categoryChoices = Object.keys(quotes);
+		const categoryOption = interaction.data.options?.find((o) => o.name === 'category');
+		let category = 'any';
 
-		if (!authorOption?.value || authorOption.value == author) {
-			author = authorChoices[Math.floor(Math.random() * authorChoices.length)];
+		if (!categoryOption?.value || categoryOption.value == category) {
+			category = categoryChoices[Math.floor(Math.random() * categoryChoices.length)];
 		} else {
-			const choice = command.options[0].choices.find((c) => c.value === authorOption.value);
-			author = choice ? choice.name : '';
+			const choice = command.options[0].choices.find((c) => c.value === categoryOption.value);
+			category = choice ? choice.name : '';
 		}
 
-		const text = quotes[author][Math.floor(Math.random() * quotes[author].length)];
-		const message = { author, text };
+		const text = quotes[category][Math.floor(Math.random() * quotes[category].length)];
+		const message = { author: category, text };
 
 		return Response.json({
 			type: 4,
