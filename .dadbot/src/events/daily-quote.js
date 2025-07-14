@@ -1,4 +1,5 @@
-import { getRandomQuote, formatQuote } from '../commands/quote.js';
+import { formatQuote } from '../lib/format.js';
+import { fetchJsonWithTimeout } from '../lib/fetch.js';
 
 export async function handler(controller, env, ctx) {
 	const token = env.DISCORD_TOKEN;
@@ -9,7 +10,7 @@ export async function handler(controller, env, ctx) {
 		return;
 	}
 	try {
-		const quote = await getRandomQuote();
+		const quote = await fetchJsonWithTimeout(env.HELLDADS_QUOTES_DAILY_URL);
 		const message = formatQuote(quote);
 		await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
 			method: 'POST',

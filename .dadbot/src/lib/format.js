@@ -43,3 +43,7 @@ export function formatDataTable(columns, dataset) {
 	// Combine into final table string
 	return ['```text', header, separator, ...rows, '```'].join('\n');
 }
+
+export function formatQuote(quote) {
+	return `🗨️ *"${quote.quote}"*\n\n— **${quote.author}**`;
+}

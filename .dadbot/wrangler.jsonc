@@ -55,7 +55,11 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	"vars": { "HELLDADS_STATS_URL": "https://www.helldads.org/data/stats.json" },
+	"vars": {
+		"HELLDADS_STATS_URL": "https://www.helldads.org/data/stats.json",
+		"HELLDADS_QUOTES_DAILY_URL": "https://www.helldads.org/data/quotes/daily.json",
+		"HELLDADS_QUOTES_ALL_URL": "https://www.helldads.org/data/quotes/all.json",
+	},
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
