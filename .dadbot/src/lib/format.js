@@ -16,6 +16,13 @@ export function formatNumber(value) {
 	return formatNumber._formatter.format(value);
 }
 
+/**
+ * Format an array of objects as a plain text table.
+ *
+ * @param {string[]} columns - Column names to display.
+ * @param {Object[]} dataset - Array of records to format.
+ * @returns {string} Markdown formatted table in a code block.
+ */
 export function formatDataTable(columns, dataset) {
 	// Determine max width per column
 	const colWidths = columns.map((col) => {
@@ -44,6 +51,12 @@ export function formatDataTable(columns, dataset) {
 	return ['```text', header, separator, ...rows, '```'].join('\n');
 }
 
+/**
+ * Format a quote with markdown styling.
+ *
+ * @param {{text: string, author: string}} quote - Quote object.
+ * @returns {string} Formatted quote for Discord.
+ */
 export function formatQuote(quote) {
-	return `🗨️ *"${quote.text}"*\n\n— **${quote.author}**`;
+        return `🗨️ *"${quote.text}"*\n\n— **${quote.author}**`;
 }

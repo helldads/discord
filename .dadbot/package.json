@@ -1,14 +1,16 @@
 {
 	"name": "dadbot",
-	"version": "0.12.1",
+	"version": "0.13.0",
 	"private": true,
 	"type": "module",
 	"scripts": {
 		"deploy": "wrangler deploy",
+		"predeploy": "npm test",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"register-commands": "node scripts/register-commands.js",
-		"list-commands": "node scripts/list-commands.js"
+		"list-commands": "node scripts/list-commands.js",
+		"test": "node --test"
 	},
 	"devDependencies": {
 		"wrangler": "^4.19.1"

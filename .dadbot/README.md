@@ -58,3 +58,11 @@ Before testing commands locally, register them with Discord:
 ```bash
 npm run register-commands
 ```
+
+Run automated tests with:
+
+```bash
+npm test
+```
+
+Tests are executed automatically before deployment via the `predeploy` script.
