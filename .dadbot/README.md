@@ -15,7 +15,8 @@ The bot currently implements the following slash commands:
 
 ## Events
 
-Once per day the bot posts a quote of the day into the dedicated channel for quotes.
+1. Once per day the bot posts a quote of the day into the main channel.
+2. Once per week it also posts community statistics into the main channel.
 
 ## Environment Variables
 
@@ -25,7 +26,7 @@ The following environment variables must be provided:
 - `DISCORD_GUILD_ID` – Guild ID where commands will be registered.
 - `DISCORD_MODS_ROLE_ID` – ID of the Mods role to grant access to new support channels.
 - `DISCORD_PUBLIC_KEY` – Public key for verifying requests.
-- `DISCORD_QUOTE_CHANNEL_ID` – Channel ID where the daily quote is posted.
+- `DISCORD_MAIN_CHANNEL_ID` – Channel ID where scheduled updates are posted.
 - `DISCORD_SUPPORT_CATEGORY_ID` – ID of the category where support channels or threads will be created.
 - `DISCORD_TOKEN` – Bot token used for authentication.
 - `HELLDADS_STATS_URL` – URL to the JSON with community stats.
@@ -70,5 +71,5 @@ npm test
 Trigger local schedule handler (cronjob) when dev is running
 
 ```bash
-curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
+curl "http://localhost:8787/cdn-cgi/handler/scheduled"
 ```

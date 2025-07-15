@@ -58,5 +58,62 @@ export function formatDataTable(columns, dataset) {
  * @returns {string} Formatted quote for Discord.
  */
 export function formatQuote(quote) {
-        return `🗨️ *"${quote.text}"*\n\n— **${quote.author}**`;
+	return `🗨️ *"${quote.text}"*\n\n— **${quote.author}**`;
+}
+
+/**
+ * Format stats based on type
+ *
+ * @param {{stats: object, type: string}} statistics object and type.
+ * @returns {string} Formatted message for Discord.
+ */
+export function formatStatsMessage(stats, type) {
+	// Format output
+	let message = '';
+	const unixTimestamp = Math.floor(new Date(stats.lastUpdated).getTime() / 1000);
+	switch (type) {
+		case 'reddit':
+			message =
+				`**HellDads [Reddit](<https://reddit.com/r/HellDads>) Stats**\n` +
+				`Subscribers: ${formatNumber(stats.reddit.subscribers)}\n` +
+				`Active users: ${formatNumber(stats.reddit.active_user_count)}\n\n` +
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
+			break;
+
+		case 'discord':
+			message =
+				`**HellDads [Discord](<https://tinyurl.com/discord-helldads>) Stats**\n` +
+				`Members: ${formatNumber(stats.discord.approximate_member_count)}\n` +
+				`Online: ${formatNumber(stats.discord.approximate_presence_count)}\n\n` +
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
+			break;
+
+		case 'tiktok':
+			message =
+				`**HellDads [TikTok](<https://www.tiktok.com/@helldads>) Stats**\n` +
+				`Follower: ${formatNumber(stats.tiktok.follower_count)}\n` +
+				`Videos: ${formatNumber(stats.tiktok.video_count)}\n\n` +
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
+			break;
+
+		case 'youtube':
+			message =
+				`**HellDads [YouTube](<https://www.youtube.com/@HellDadsHQ>) Stats**\n` +
+				`Subscribers: ${formatNumber(stats.youtube.subscriber_count)}\n` +
+				`Videos: ${formatNumber(stats.youtube.video_count)}\n\n` +
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
+			break;
+
+		default:
+			message =
+				`**HellDads Community Stats**\n\n` +
+				`[Reddit](<https://reddit.com/r/HellDads>): ${formatNumber(stats.reddit.subscribers)} subscribers, ${formatNumber(stats.reddit.active_user_count)} active users\n` +
+				`[Discord](<https://tinyurl.com/discord-helldads>): ${formatNumber(stats.discord.approximate_member_count)} members, ${formatNumber(stats.discord.approximate_presence_count)} online\n` +
+				`[TikTok](<https://www.tiktok.com/@helldads>): ${formatNumber(stats.tiktok.follower_count)} followers, ${formatNumber(stats.tiktok.video_count)} videos\n` +
+				`[YouTube](<https://www.youtube.com/@HellDadsHQ>): ${formatNumber(stats.youtube.subscriber_count)} subscribers, ${formatNumber(stats.youtube.video_count)} videos\n\n` +
+				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
+			break;
+	}
+
+	return message;
 }

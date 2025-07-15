@@ -11,6 +11,7 @@ import * as highscores from './commands/highscores.js';
 
 // scheduled events
 import * as dailyQuote from './events/daily-quote.js';
+import * as weeklyStats from './events/weekly-stats.js';
 
 const commandHandlers = {
 	[stats.command.name]: stats.handler,
@@ -64,7 +65,16 @@ export default {
 	},
 
 	// SCHEDULED cron request handler
-	async scheduled(controller, env, ctx) {
-		ctx.waitUntil(dailyQuote.handler(controller, env, ctx));
+	async scheduled(event, env, ctx) {
+		switch (event.cron) {
+			// daily quote-of-the-day in the Afternoon
+			case '0 17 * * *':
+				ctx.waitUntil(dailyQuote.handler(event, env, ctx));
+				break;
+			// weekly community stats on Monday Morning
+			case '0 6 * * 2':
+				ctx.waitUntil(weeklyStats.handler(event, env, ctx));
+				break;
+		}
 	},
 };

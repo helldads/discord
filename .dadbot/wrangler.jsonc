@@ -27,7 +27,10 @@
 		"enabled": true,
 	},
 	"triggers": {
-		"crons": ["0 17 * * *"], // daily at noon
+		"crons": [
+			"0 17 * * *", // daily quote
+			"0 6 * * 2", // weekly stats on Monday
+		],
 	},
 
 	"d1_databases": [

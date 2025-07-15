@@ -3,7 +3,7 @@ import { fetchJsonWithTimeout } from '../lib/fetch.js';
 
 export async function handler(controller, env, ctx) {
 	const token = env.DISCORD_TOKEN;
-	const channelId = env.DISCORD_QUOTE_CHANNEL_ID;
+	const channelId = env.DISCORD_MAIN_CHANNEL_ID;
 
 	if (!token || !channelId) {
 		console.error('Missing DISCORD_TOKEN or DISCORD_QUOTE_CHANNEL_ID');
