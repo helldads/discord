@@ -1,5 +1,5 @@
 // discord verification
-import { verifyKey } from './verify-discord.js';
+import { verifyKey } from './lib/discord.js';
 
 // slash commands
 import * as stats from './commands/stats.js';
