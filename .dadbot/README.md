@@ -1,6 +1,6 @@
 # Dadbot Discord Bot
 
-This worker handles slash commands for the Helldads Discord server.
+This worker handles slash commands for the HellDads Discord server.
 
 ## Commands
 
@@ -10,7 +10,7 @@ The bot currently implements the following slash commands:
 - `/highscores` – Display highscores of all HellDads who /submit their results. Use `user` to view a specific player's stats.
 - `/modhelp` – Open a private support channel and ping the mods.
 - `/quote` – Get a democratic Helldivers quote.
-- `/stats` – Display community statistics gathered from Helldads services with formatted numbers.
+- `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
 - `/submit` – Share your game statistics for the highscores.
 
 ## Events
@@ -53,16 +53,22 @@ Install dependencies with `npm install` and run a local worker using:
 npm run dev
 ```
 
-Before testing commands locally, register them with Discord:
+Before testing commands on Discord, you need to register them:
 
 ```bash
 npm run register-commands
 ```
 
+Tests are executed automatically before deployment via the `predeploy` script.
 Run automated tests with:
 
 ```bash
 npm test
 ```
 
-Tests are executed automatically before deployment via the `predeploy` script.
+
+Trigger local schedule handler (cronjob) when dev is running
+
+```bash
+curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
+```
