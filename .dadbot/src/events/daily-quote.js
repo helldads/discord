@@ -1,6 +1,13 @@
 import { formatQuote } from '../lib/format.js';
 import { fetchJsonWithTimeout } from '../lib/fetch.js';
 
+/**
+ * Fetch the quote of the day and post it to the configured Discord channel.
+ *
+ * @param {ScheduledController} controller - Cloudflare controller for the scheduled event.
+ * @param {Record<string, string>} env - Bindings providing the Discord token, channel ID and quote URL.
+ * @param {ExecutionContext} ctx - Execution context provided by the platform.
+ */
 export async function handler(controller, env, ctx) {
 	const token = env.DISCORD_TOKEN;
 	const channelId = env.DISCORD_MAIN_CHANNEL_ID;

@@ -15,8 +15,10 @@ The bot currently implements the following slash commands:
 
 ## Events
 
-1. Once per day the bot posts a quote of the day into the main channel.
-2. Once per week it also posts community statistics into the main channel.
+1. Once per day the bot posts a quote of the day into the main channel
+   ([`src/events/daily-quote.js`](src/events/daily-quote.js)).
+2. Once per week it also posts community statistics into the main channel
+   ([`src/events/weekly-stats.js`](src/events/weekly-stats.js)).
 
 ## Environment Variables
 

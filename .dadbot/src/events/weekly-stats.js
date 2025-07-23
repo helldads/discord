@@ -2,11 +2,13 @@ import { fetchJsonWithTimeout } from '../lib/fetch.js';
 import { formatStatsMessage } from '../lib/format.js';
 
 /**
- * Post a weekly summary of community statistics into the main channel.
+ * Retrieve community statistics and post a formatted weekly summary into the
+ * main Discord channel.
  *
- * @param {ScheduledController} controller
- * @param {Object} env
- * @param {ExecutionContext} ctx
+ * @param {ScheduledController} controller - Cloudflare controller for the scheduled event.
+ * @param {Record<string, string>} env - Bindings providing the Discord token,
+ *   channel ID and statistics URL.
+ * @param {ExecutionContext} ctx - Execution context provided by the platform.
  */
 export async function handler(controller, env, ctx) {
 	const token = env.DISCORD_TOKEN;
