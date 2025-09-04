@@ -19,10 +19,10 @@ export async function handler(interaction, env, ctx) {
 		'',
 		'This bot also supports helpful commands:',
 		'• `/modhelp` – Open a private support channel with the mods.',
-		'• `/quote` – Get a Helldivers quote.',
+		'• `/quote` – Get a democratic Helldivers quote.',
 		'• `/stats` – Display community statistics.',
-		//'• `/submit` – Share your game statistics for the highscores.',
-		//'• `/highscores` – Display highscores of all HellDads who /submit their results.',
+		//'• `/update` – Update your game statistics for the highscores.',
+		//'• `/highscores` – Display highscores of all HellDads who /update their results.',
 		'• `/help` – Show this help message.',
 	];
 

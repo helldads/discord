@@ -11,7 +11,7 @@ The bot currently implements the following slash commands:
 - `/modhelp` – Open a private support channel and ping the mods.
 - `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
-- `/submit` – Share your game statistics for the highscores.
+- `/update` – Update your game statistics for the highscores.
 
 ## Events
 
@@ -43,7 +43,7 @@ This project uses a Cloudflare D1 database called `helldads-statistics`. After c
 npx wrangler d1 migrations apply helldads-statistics
 ```
 
-This command applies all SQL migrations and creates the `submission` table used by the `/submit` command.
+This command applies all SQL migrations and creates the `submission` table used by the `/submit` and `/update` command.
 
 It also creates the `highscore` table which stores one record per user and is
 automatically updated when a new submission is stored.
