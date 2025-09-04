@@ -12,6 +12,7 @@ import { handler as statsHandler } from '../src/commands/stats.js';
 import { handler as highscoresHandler } from '../src/commands/highscores.js';
 import { handler as modhelpHandler } from '../src/commands/modhelp.js';
 import { handler as submitHandler } from '../src/commands/submit.js';
+import { handler as updateHandler } from '../src/commands/update.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -168,6 +169,14 @@ test('submit command executes with stub DB', async () => {
 	const env = { STATISTICS_DB: createFakeDB() };
 	const interaction = { data: {}, member: { user: { id: '1' } } };
 	const res = await submitHandler(interaction, env, {});
+	const json = await readJson(res);
+	assert.ok(json.data.content.includes('No data provided.'));
+});
+
+test('update command executes with stub DB', async () => {
+	const env = { STATISTICS_DB: createFakeDB() };
+	const interaction = { data: {}, member: { user: { id: '1' } } };
+	const res = await updateHandler(interaction, env, {});
 	const json = await readJson(res);
 	assert.ok(json.data.content.includes('No data provided.'));
 });

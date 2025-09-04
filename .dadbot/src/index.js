@@ -7,6 +7,7 @@ import * as quote from './commands/quote.js';
 import * as modHelp from './commands/modhelp.js';
 import * as help from './commands/help.js';
 import * as submit from './commands/submit.js';
+import * as update from './commands/update.js';
 import * as highscores from './commands/highscores.js';
 
 // scheduled events
@@ -19,6 +20,7 @@ const commandHandlers = {
 	[modHelp.command.name]: modHelp.handler,
 	[help.command.name]: help.handler,
 	[submit.command.name]: submit.handler,
+	[update.command.name]: update.handler,
 	[highscores.command.name]: highscores.handler,
 };
 
