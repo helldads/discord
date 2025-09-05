@@ -13,6 +13,7 @@ import { handler as highscoresHandler } from '../src/commands/highscores.js';
 import { handler as modhelpHandler } from '../src/commands/modhelp.js';
 import { handler as submitHandler } from '../src/commands/submit.js';
 import { handler as updateHandler } from '../src/commands/update.js';
+import { handler as eventHandler } from '../src/commands/event.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -183,4 +184,36 @@ test('update command executes with stub DB', async () => {
 	const res = await updateHandler(interaction, env, {});
 	const json = await readJson(res);
 	assert.ok(json.data.content.includes('No data provided.'));
+});
+
+test('event command aggregates event results', async () => {
+	function createEventDB() {
+		return {
+			prepare(sql) {
+				return {
+					bind() {
+						return this;
+					},
+					all: async () => {
+						if (sql.includes('GROUP BY')) {
+							return {
+								results: [
+									{ user: '1', name: 'Max', lungs: 80, eggs: 20 },
+									{ user: '2', lungs: 20, eggs: 30 },
+								],
+							};
+						}
+						return { results: [{ lungs: 100, eggs: 50 }] };
+					},
+				};
+			},
+		};
+	}
+	const env = { STATISTICS_DB: createEventDB(), HELLDADS_CURRENT_EVENT_KEY: 'lungpunch' };
+	const res = await eventHandler({ data: {} }, env, {});
+	const json = await readJson(res);
+	assert.ok(json.data.content.includes('OPERATION: LUNGPUNCH'));
+	assert.ok(json.data.content.includes('Total Spore Lungs destroyed: 100'));
+	assert.ok(json.data.content.includes('Max'));
+	assert.ok(json.data.content.includes('<@2>'));
 });

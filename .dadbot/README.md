@@ -12,6 +12,7 @@ The bot currently implements the following slash commands:
 - `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
 - `/update` – Update your game statistics for the highscores.
+- `/event` – Display the current event and statistics.
 - `/submit` – Submit your mission results for the current community event.
 
 ## Events

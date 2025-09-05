@@ -9,6 +9,7 @@ import * as help from './commands/help.js';
 import * as submit from './commands/submit.js';
 import * as update from './commands/update.js';
 import * as highscores from './commands/highscores.js';
+import * as event from './commands/event.js';
 
 // scheduled events
 import * as dailyQuote from './events/daily-quote.js';
@@ -22,6 +23,7 @@ const commandHandlers = {
 	[submit.command.name]: submit.handler,
 	[update.command.name]: update.handler,
 	[highscores.command.name]: highscores.handler,
+	[event.command.name]: event.handler,
 };
 
 export default {

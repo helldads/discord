@@ -47,10 +47,12 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
+	const username = interaction.member?.user?.username || interaction.user?.username || '';
+
 	const now = new Date().toISOString();
 
-	const columns = ['user', 'date', 'event_key'];
-	const values = [userId, now, eventKey];
+	const columns = ['user', 'name', 'date', 'event_key'];
+	const values = [userId, username, now, eventKey];
 	if (lungs !== undefined) {
 		columns.push('event_spore_lungs_destroyed');
 		values.push(parseInt(lungs, 10));
@@ -73,7 +75,6 @@ export async function handler(interaction, env, ctx) {
 		});
 	}
 
-	const username = interaction.member?.user?.username || interaction.user?.username || 'Someone';
 	let message;
 	if (lungs !== undefined && eggs !== undefined) {
 		message = `${username} destroyed ${lungs} Spore Lungs and ${eggs} Eggs Sites.`;
@@ -84,6 +85,6 @@ export async function handler(interaction, env, ctx) {
 	}
 	return Response.json({
 		type: 4,
-		data: { content: message, flags: 64 },
+		data: { content: message },
 	});
 }

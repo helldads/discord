@@ -8,7 +8,18 @@ import * as help from '../src/commands/help.js';
 import * as submit from '../src/commands/submit.js';
 import * as update from '../src/commands/update.js';
 import * as highscores from '../src/commands/highscores.js';
-const commands = [stats.command, quote.command, modHelp.command, help.command, submit.command, update.command, highscores.command];
+import * as event from '../src/commands/event.js';
+
+const commands = [
+	stats.command,
+	quote.command,
+	modHelp.command,
+	help.command,
+	submit.command,
+	update.command,
+	highscores.command,
+	event.command,
+];
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
