@@ -137,6 +137,14 @@ test('highscores command executes with stub DB', async () => {
 	assert.ok(typeof json.data.content.includes('No highscores available.'));
 });
 
+test('update command executes with stub DB', async () => {
+	const env = { STATISTICS_DB: createFakeDB() };
+	const interaction = { data: {}, member: { user: { id: '1' } } };
+	const res = await updateHandler(interaction, env, {});
+	const json = await readJson(res);
+	assert.ok(json.data.content.includes('No data provided.'));
+});
+
 test('modhelp command triggers fetch calls', async () => {
 	const calls = [];
 	const originalFetch = globalThis.fetch;
@@ -169,21 +177,34 @@ test('modhelp command triggers fetch calls', async () => {
 test('submit command executes with stub DB', async () => {
 	const env = { STATISTICS_DB: createFakeDB(), HELLDADS_CURRENT_EVENT_KEY: 'test' };
 	const interaction = {
-		data: { options: [{ name: 'event_spore_lungs_destroyed', value: 5 }] },
+		data: { options: [{ name: 'sporelungs', value: 5 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	console.log(json.data.content);
 	assert.ok(json.data.content.includes('Tester destroyed 5 Spore Lungs.'));
 });
 
-test('update command executes with stub DB', async () => {
-	const env = { STATISTICS_DB: createFakeDB() };
-	const interaction = { data: {}, member: { user: { id: '1' } } };
-	const res = await updateHandler(interaction, env, {});
+test('submit command fails with no active event', async () => {
+	const env = { HELLDADS_CURRENT_EVENT_KEY: '' };
+	const interaction = {
+		data: { options: [] },
+		member: { user: { id: '1', username: 'Tester' } },
+	};
+	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('No data provided.'));
+	assert.ok(json.data.content.includes('No event is currently active.'));
+});
+
+test('submit command fails with no options', async () => {
+	const env = { HELLDADS_CURRENT_EVENT_KEY: 'test' };
+	const interaction = {
+		data: { options: [] },
+		member: { user: { id: '1', username: 'Tester' } },
+	};
+	const res = await submitHandler(interaction, env, {});
+	const json = await readJson(res);
+	assert.ok(json.data.content.includes('Error: Provide Spore Lungs or Eggs Sites destroyed.'));
 });
 
 test('event command aggregates event results', async () => {

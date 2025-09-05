@@ -5,13 +5,13 @@ export const command = {
 	description: 'Submit your mission results for the Operation: LUNGPUNCH.',
 	options: [
 		{
-			name: 'event_spore_lungs_destroyed',
+			name: 'sporelungs',
 			description: 'Spore Lungs destroyed',
 			type: 4, // INTEGER
 			required: false,
 		},
 		{
-			name: 'event_eggs_destroyed',
+			name: 'eggs',
 			description: 'Eggs Sites destroyed',
 			type: 4, // INTEGER
 			required: false,
@@ -33,8 +33,8 @@ export async function handler(interaction, env, ctx) {
 	for (const opt of interaction.data.options || []) {
 		options[opt.name] = opt.value;
 	}
-	const lungs = options.event_spore_lungs_destroyed;
-	const eggs = options.event_eggs_destroyed;
+	const lungs = options.sporelungs;
+	const eggs = options.eggs;
 
 	if (lungs === undefined && eggs === undefined) {
 		return Response.json({
