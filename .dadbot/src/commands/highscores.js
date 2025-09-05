@@ -4,7 +4,7 @@ import { formatNumber, formatDataTable } from '../lib/format.js';
 
 export const command = {
 	name: 'highscores',
-	description: 'Display highscores of all HellDads who /submit their results.',
+	description: 'Display highscores of all HellDads who shared their results.',
 	options: [
 		{
 			name: 'user',

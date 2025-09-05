@@ -1,82 +1,89 @@
-// Slash command for users to submit their personal game stats
-import { statisticsFields } from '../data/statistics.js';
-import { formatData, gatherOptionValues, parseData } from '../lib/statistics.js';
+// Slash command for users to submit their event contributions
 
 export const command = {
 	name: 'submit',
-	description: 'Submit your Helldivers statistics (in development)',
-	options: statisticsFields.map((f) => ({
-		name: f.name,
-		description: f.description,
-		type: f.type === 'string' || f.type === 'date' ? 3 : 4, // STRING or INTEGER
-		required: false,
-	})),
+	description: 'Submit your mission results for the Operation: LUNGPUNCH.',
+	options: [
+		{
+			name: 'event_spore_lungs_destroyed',
+			description: 'Spore Lungs destroyed',
+			type: 4, // INTEGER
+			required: false,
+		},
+		{
+			name: 'event_eggs_destroyed',
+			description: 'Eggs Sites destroyed',
+			type: 4, // INTEGER
+			required: false,
+		},
+	],
 };
 
 export async function handler(interaction, env, ctx) {
-	const optionsMap = gatherOptionValues(interaction.data.options);
-
-	const { data, error } = parseData(optionsMap);
-	if (error) {
+	// Abort if no event is active
+	const eventKey = env.HELLDADS_CURRENT_EVENT_KEY;
+	if (!eventKey) {
 		return Response.json({
 			type: 4,
-			data: { content: `Error: ${error}`, flags: 64 },
+			data: { content: 'No event is currently active.', flags: 64 },
 		});
 	}
+
+	const options = {};
+	for (const opt of interaction.data.options || []) {
+		options[opt.name] = opt.value;
+	}
+	const lungs = options.event_spore_lungs_destroyed;
+	const eggs = options.event_eggs_destroyed;
+
+	if (lungs === undefined && eggs === undefined) {
+		return Response.json({
+			type: 4,
+			data: {
+				content: 'Error: Provide Spore Lungs or Eggs Sites destroyed.',
+				flags: 64,
+			},
+		});
+	}
+
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const now = new Date().toISOString();
 
-	// build insert statement dynamically so unspecified fields remain NULL
-	const columns = ['user', 'date'];
-	const values = [userId, now];
-	for (const [key, value] of Object.entries(data)) {
-		columns.push(key);
-		values.push(value);
+	const columns = ['user', 'date', 'event_key'];
+	const values = [userId, now, eventKey];
+	if (lungs !== undefined) {
+		columns.push('event_spore_lungs_destroyed');
+		values.push(parseInt(lungs, 10));
+	}
+	if (eggs !== undefined) {
+		columns.push('event_eggs_destroyed');
+		values.push(parseInt(eggs, 10));
 	}
 
-	// Only update when new data has been provided
-	if (columns.length > 2) {
-		const placeholders = columns.map(() => '?').join(', ');
-		const smSql = `INSERT INTO submissions (${columns.join(', ')}) VALUES (${placeholders});`;
-		const updates = columns
-			.slice(1)
-			.map((c) => `${c} = excluded.${c}`)
-			.join(', ');
-		const hsSql = `INSERT INTO highscores(${columns.join(', ')}) VALUES (${placeholders}) ` + `ON CONFLICT(user) DO UPDATE SET ${updates}`;
-
-		try {
-			const stmtSubmission = env.STATISTICS_DB.prepare(smSql).bind(...values);
-			const stmtHighscore = env.STATISTICS_DB.prepare(hsSql).bind(...values);
-			// batch executes statements in a transaction
-			await env.STATISTICS_DB.batch([stmtSubmission, stmtHighscore]);
-		} catch (err) {
-			console.error('Error writing to database', err);
-			return Response.json({
-				type: 4,
-				data: { content: 'Failed to store data.', flags: 64 },
-			});
-		}
-	}
-
-	// fetch the highscore for this user
-	let highscore = null;
 	try {
-		const res = await env.STATISTICS_DB.prepare('SELECT * FROM highscores WHERE user = ?').bind(userId).all();
-		if (res?.results?.length) {
-			highscore = res.results[0];
-		}
+		const placeholders = columns.map(() => '?').join(', ');
+		const sql = `INSERT INTO submissions (${columns.join(', ')}) VALUES (${placeholders});`;
+		const submission = env.STATISTICS_DB.prepare(sql).bind(...values);
+		await env.STATISTICS_DB.batch([submission]);
 	} catch (err) {
-		console.error('Error reading from database', err);
+		console.error('Error writing to database', err);
+		return Response.json({
+			type: 4,
+			data: { content: 'Failed to store data.', flags: 64 },
+		});
 	}
 
-	const changed = formatData(data);
-	const summary = highscore ? formatData(highscore, ['user', 'date', 'verified']) : 'No highscore found.';
-
+	const username = interaction.member?.user?.username || interaction.user?.username || 'Someone';
+	let message;
+	if (lungs !== undefined && eggs !== undefined) {
+		message = `${username} destroyed ${lungs} Spore Lungs and ${eggs} Eggs Sites.`;
+	} else if (lungs !== undefined) {
+		message = `${username} destroyed ${lungs} Spore Lungs.`;
+	} else {
+		message = `${username} destroyed ${eggs} Eggs Sites.`;
+	}
 	return Response.json({
 		type: 4,
-		data: {
-			content: `**Updated Values**\n${changed}\n\n**Current Highscore**\n${summary}`,
-			flags: 64,
-		},
+		data: { content: message, flags: 64 },
 	});
 }

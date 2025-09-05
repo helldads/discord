@@ -62,6 +62,7 @@
 		"HELLDADS_STATS_URL": "https://www.helldads.org/data/stats.json",
 		"HELLDADS_QUOTES_DAILY_URL": "https://www.helldads.org/data/quotes/daily.json",
 		"HELLDADS_QUOTES_ALL_URL": "https://www.helldads.org/data/quotes/all.json",
+		"HELLDADS_CURRENT_EVENT_KEY": "lungpunch",
 	},
 	/**
 	 * Note: Use secrets to store sensitive data.

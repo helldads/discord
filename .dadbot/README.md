@@ -7,11 +7,12 @@ This worker handles slash commands for the HellDads Discord server.
 The bot currently implements the following slash commands:
 
 - `/help` – Display an overview of commands and useful channels.
-- `/highscores` – Display highscores of all HellDads who /submit their results. Use `user` to view a specific player's stats.
+- `/highscores` – Display highscores of all HellDads who shared their results. Use `user` to view a specific player's stats.
 - `/modhelp` – Open a private support channel and ping the mods.
 - `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
 - `/update` – Update your game statistics for the highscores.
+- `/submit` – Submit your mission results for the current community event.
 
 ## Events
 

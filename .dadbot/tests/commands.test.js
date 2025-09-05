@@ -166,11 +166,15 @@ test('modhelp command triggers fetch calls', async () => {
 });
 
 test('submit command executes with stub DB', async () => {
-	const env = { STATISTICS_DB: createFakeDB() };
-	const interaction = { data: {}, member: { user: { id: '1' } } };
+	const env = { STATISTICS_DB: createFakeDB(), HELLDADS_CURRENT_EVENT_KEY: 'test' };
+	const interaction = {
+		data: { options: [{ name: 'event_spore_lungs_destroyed', value: 5 }] },
+		member: { user: { id: '1', username: 'Tester' } },
+	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('No data provided.'));
+	console.log(json.data.content);
+	assert.ok(json.data.content.includes('Tester destroyed 5 Spore Lungs.'));
 });
 
 test('update command executes with stub DB', async () => {
