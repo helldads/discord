@@ -182,7 +182,7 @@ test('submit command executes with stub DB', async () => {
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('Tester destroyed 5 Spore Lungs.'));
+	assert.ok(json.data.content.includes('<@1> destroyed 5 Spore Lungs.'));
 });
 
 test('submit command fails with no active event', async () => {

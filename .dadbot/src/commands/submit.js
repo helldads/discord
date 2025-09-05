@@ -77,11 +77,11 @@ export async function handler(interaction, env, ctx) {
 
 	let message;
 	if (lungs !== undefined && eggs !== undefined) {
-		message = `${username} destroyed ${lungs} Spore Lungs and ${eggs} Eggs Sites.`;
+		message = `<@${userId}> destroyed ${lungs} Spore Lungs and ${eggs} Eggs Sites.`;
 	} else if (lungs !== undefined) {
-		message = `${username} destroyed ${lungs} Spore Lungs.`;
+		message = `<@${userId}> destroyed ${lungs} Spore Lungs.`;
 	} else {
-		message = `${username} destroyed ${eggs} Eggs Sites.`;
+		message = `<@${userId}> destroyed ${eggs} Eggs Sites.`;
 	}
 	return Response.json({
 		type: 4,
