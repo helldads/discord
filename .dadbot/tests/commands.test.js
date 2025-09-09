@@ -62,9 +62,11 @@ test('helloworld command works', async () => {
 });
 
 test('help command works', async () => {
-	const res = await helpHandler({ data: {} }, {}, {});
+	const env = { HELLDADS_CODE_OF_CONDUCT: 'https://www.helldads.org/code-of-conduct' };
+	const res = await helpHandler({ data: {} }, env, {});
 	const json = await readJson(res);
 	assert.ok(json.data.content.includes('Welcome to HellDads'));
+	assert.ok(json.data.content.includes(env.HELLDADS_CODE_OF_CONDUCT));
 });
 
 test('quote command fetches a quote', async () => {

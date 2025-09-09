@@ -4,10 +4,11 @@ export const command = {
 };
 
 export async function handler(interaction, env, ctx) {
+	const cod = env.HELLDADS_CODE_OF_CONDUCT;
 	const lines = [
 		"**Welcome to HellDads! Here's how to get started:**",
 		'',
-		'• <#1301288282616758363> – Learn our rules and code of conduct.',
+		'• <#1301288282616758363> – Learn our rules and [Code of Conduct](' + cod + ').',
 		"• <#1301285072896266254> – Introduce yourself and check what's going on.",
 		'• <#1309187415487025262> – Grab roles like **LFG** to dive with other dads.',
 		'• <#1301290839661875202> – Find teammates for your next dive.',
