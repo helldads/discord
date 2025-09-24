@@ -76,7 +76,6 @@ export function formatStatsMessage(stats, type) {
 			message =
 				`**HellDads [Reddit](<https://reddit.com/r/HellDads>) Stats**\n` +
 				`Subscribers: ${formatNumber(stats.reddit.subscribers)}\n` +
-				`Active users: ${formatNumber(stats.reddit.active_user_count)}\n\n` +
 				`Last updated: <t:${unixTimestamp}:R>, [www.helldads.org](<https://www.helldads.org>)`;
 			break;
 
@@ -107,7 +106,7 @@ export function formatStatsMessage(stats, type) {
 		default:
 			message =
 				`**HellDads Community Stats**\n\n` +
-				`[Reddit](<https://reddit.com/r/HellDads>): ${formatNumber(stats.reddit.subscribers)} subscribers, ${formatNumber(stats.reddit.active_user_count)} active users\n` +
+				`[Reddit](<https://reddit.com/r/HellDads>): ${formatNumber(stats.reddit.subscribers)} subscribers\n` +
 				`[Discord](<https://tinyurl.com/discord-helldads>): ${formatNumber(stats.discord.approximate_member_count)} members, ${formatNumber(stats.discord.approximate_presence_count)} online\n` +
 				`[TikTok](<https://www.tiktok.com/@helldads>): ${formatNumber(stats.tiktok.follower_count)} followers, ${formatNumber(stats.tiktok.video_count)} videos\n` +
 				`[YouTube](<https://www.youtube.com/@HellDadsHQ>): ${formatNumber(stats.youtube.subscriber_count)} subscribers, ${formatNumber(stats.youtube.video_count)} videos\n\n` +

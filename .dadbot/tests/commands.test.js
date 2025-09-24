@@ -110,7 +110,7 @@ test('quote command fetches a quote from category', async () => {
 test('stats command returns community stats', async () => {
 	const payload = {
 		lastUpdated: new Date().toISOString(),
-		reddit: { subscribers: 1, active_user_count: 1 },
+		reddit: { subscribers: 1 },
 		discord: { approximate_member_count: 1, approximate_presence_count: 1 },
 		tiktok: { follower_count: 1, video_count: 1 },
 		youtube: { subscriber_count: 1, video_count: 1 },
