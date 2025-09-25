@@ -1,6 +1,7 @@
 import { formatNumber } from '../lib/format.js';
 
 const EVENT_KEY = 'kotks2';
+const MAX_SUBMISSION = 3000;
 
 const DIVISIONS = {
 	diaper: {
@@ -35,7 +36,7 @@ export const command = {
 			type: 4, // INTEGER
 			required: false,
 			min_value: 1,
-			max_value: 2500,
+			max_value: MAX_SUBMISSION,
 		},
 		{
 			name: 'crayon',
@@ -43,7 +44,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 3000,
+			max_value: MAX_SUBMISSION,
 		},
 		{
 			name: 'diaper',
@@ -51,7 +52,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 3000,
+			max_value: MAX_SUBMISSION,
 		},
 		{
 			name: 'science',
@@ -59,7 +60,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 3000,
+			max_value: MAX_SUBMISSION,
 		},
 		{
 			name: 'snack',
@@ -67,7 +68,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 3000,
+			max_value: MAX_SUBMISSION,
 		},
 	],
 };
