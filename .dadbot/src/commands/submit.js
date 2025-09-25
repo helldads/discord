@@ -43,7 +43,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 2500,
+			max_value: 3000,
 		},
 		{
 			name: 'diaper',
@@ -51,7 +51,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 2500,
+			max_value: 3000,
 		},
 		{
 			name: 'science',
@@ -59,7 +59,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 2500,
+			max_value: 3000,
 		},
 		{
 			name: 'snack',
@@ -67,7 +67,7 @@ export const command = {
 			type: 4,
 			required: false,
 			min_value: 1,
-			max_value: 2500,
+			max_value: 3000,
 		},
 	],
 };
@@ -100,7 +100,7 @@ function parseSubmission(options) {
 		return { error: 'Kill count must be greater than zero.' };
 	}
 
-	if (kills > 1500) {
+	if (kills >= 3000) {
 		return {
 			error:
 				'Kill count exceptionally high, congratulations! Please submit a screenshot to the mods first, so they can verify your results and add them manually.',

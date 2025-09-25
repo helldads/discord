@@ -326,7 +326,7 @@ test('event command aggregates event results', async () => {
 	assert.ok(json.data.content.includes('Total kills: 120,400'));
 	assert.ok(json.data.content.includes('Total submissions: 240'));
 	assert.ok(json.data.content.includes('Average kills: 501'));
-	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per mission: <@99> with 1,200 kills'));
+	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per submission: <@99> with 1,200 kills'));
 	assert.ok(json.data.content.includes('**Time left**:'));
 	assert.ok(json.data.content.includes('Use `/submit` to contribute your kill count'));
 });

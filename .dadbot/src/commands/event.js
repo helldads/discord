@@ -109,8 +109,8 @@ export async function handler(interaction, env, ctx) {
 	});
 
 	const highestLine = highestSubmission
-		? `<:xdad:1419602524545093692> Highest result per mission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.kills)} kills`
-		: 'Highest result per mission: N/A';
+		? `<:xdad:1419602524545093692> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.kills)} kills`
+		: 'Highest result per submission: N/A';
 
 	const message = [
 		'# King of the Kill - Season 2',
