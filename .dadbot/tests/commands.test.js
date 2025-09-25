@@ -221,7 +221,7 @@ test('submit command records kills and returns totals', async () => {
 });
 
 test('submit command fails with no active event', async () => {
-	const env = { HELLDADS_CURRENT_EVENT_KEY: '' };
+	const env = { HELLDADS_CURRENT_EVENT_KEY: '', HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString() };
 	const interaction = {
 		data: { options: [{ name: 'science', value: 100 }] },
 		member: { user: { id: '1', username: 'Tester' } },
@@ -268,7 +268,7 @@ test('submit command rejects invalid payloads', async () => {
 
 	const resCap = await submitHandler(overCap, env, {});
 	const jsonCap = await readJson(resCap);
-	assert.ok(jsonCap.data.content.includes('Kill count too high'));
+	assert.ok(jsonCap.data.content.includes('Kill count exceptionally high, congratulations!'));
 });
 
 test('submit command enforces rate limit after three submissions', async () => {
@@ -317,12 +317,16 @@ test('event command aggregates event results', async () => {
 	const json = await readJson(res);
 	console.log(json.data.content);
 	assert.ok(json.data.content.includes('King of the Kill - Season 2'));
-	assert.ok(json.data.content.includes('1. Science Team: 30,000 kills'));
-	assert.ok(json.data.content.includes('5. S.N.A.C.K. Division: 15,300 kills'));
+	assert.ok(json.data.content.includes(':first_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 kills'));
+	assert.ok(
+		json.data.content.includes(
+			'<:helldads_baby:1316435213559136316> — <:sd_logo:1395099109203116083> **S.N.A.C.K. Division**: 15,300 kills',
+		),
+	);
 	assert.ok(json.data.content.includes('Total kills: 120,400'));
 	assert.ok(json.data.content.includes('Total submissions: 240'));
 	assert.ok(json.data.content.includes('Average kills: 501'));
-	assert.ok(json.data.content.includes('Highest result per mission: xnShiLong'));
-	assert.ok(json.data.content.includes('Time left:'));
-	assert.ok(json.data.content.includes('Use /submit to contribute your kill count'));
+	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per mission: <@99> with 1,200 kills'));
+	assert.ok(json.data.content.includes('**Time left**:'));
+	assert.ok(json.data.content.includes('Use `/submit` to contribute your kill count'));
 });

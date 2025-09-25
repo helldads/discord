@@ -100,9 +100,10 @@ function parseSubmission(options) {
 		return { error: 'Kill count must be greater than zero.' };
 	}
 
-	if (kills > 2500) {
+	if (kills > 1500) {
 		return {
-			error: 'Kill count too high. Please submit a screenshot to the mods so they can review and add it manually.',
+			error:
+				'Kill count exceptionally high, congratulations! Please submit a screenshot to the mods first, so they can verify your results and add them manually.',
 		};
 	}
 
@@ -142,14 +143,21 @@ export async function handler(interaction, env, ctx) {
 	const eventKey = env.HELLDADS_CURRENT_EVENT_KEY ?? EVENT_KEY;
 
 	// safeguard to prevent submissions once the event has ended
-	if (eventKey !== EVENT_KEY) {
-		return Response.json({
-			type: 4,
-			data: {
-				content: 'No event is currently active.',
-				flags: 64,
-			},
-		});
+	const eventEnd = env.HELLDADS_CURRENT_EVENT_END;
+	if (eventEnd) {
+		const endDate = new Date(eventEnd);
+		if (!Number.isNaN(endDate.getTime())) {
+			const diffMs = endDate.getTime() - Date.now();
+			if (diffMs <= 0) {
+				return Response.json({
+					type: 4,
+					data: {
+						content: 'No event is currently active.',
+						flags: 64,
+					},
+				});
+			}
+		}
 	}
 
 	const options = parseOptions(interaction);

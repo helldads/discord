@@ -3,11 +3,11 @@ import { formatNumber } from '../lib/format.js';
 const EVENT_KEY = 'kotks2';
 
 const DIVISIONS = [
-	{ key: 'science', column: 'event_kotk_science_kills', name: 'Science Team' },
-	{ key: 'baldzerkers', column: 'event_kotk_baldzerkers_kills', name: 'Baldzerkers' },
-	{ key: 'diaper', column: 'event_kotk_diaper_kills', name: 'Diaper Division' },
-	{ key: 'crayon', column: 'event_kotk_crayon_kills', name: 'Crayon Commandos' },
-	{ key: 'snack', column: 'event_kotk_snack_kills', name: 'S.N.A.C.K. Division' },
+	{ key: 'science', column: 'event_kotk_science_kills', name: 'Science Team', logo: '<:st_logo:1345027109944299562>' },
+	{ key: 'baldzerkers', column: 'event_kotk_baldzerkers_kills', name: 'Baldzerkers', logo: '<:bz_logo:1345027059327438848>' },
+	{ key: 'diaper', column: 'event_kotk_diaper_kills', name: 'Diaper Division', logo: '<:dd_logo:1345027087446052914>' },
+	{ key: 'crayon', column: 'event_kotk_crayon_kills', name: 'Crayon Commandos', logo: '<:cc_logo:1345027134862655549>' },
+	{ key: 'snack', column: 'event_kotk_snack_kills', name: 'S.N.A.C.K. Division', logo: '<:sd_logo:1395099109203116083>' },
 ];
 
 export const command = {
@@ -31,6 +31,7 @@ export async function handler(interaction, env, ctx) {
 
 	const divisionTotals = DIVISIONS.map((division) => ({
 		name: division.name,
+		logo: division.logo,
 		total: Number(totalsRow?.[division.key] || 0),
 	}));
 
@@ -88,35 +89,43 @@ export async function handler(interaction, env, ctx) {
 					`${hours} hour${hours === 1 ? '' : 's'}`,
 					`${minutes} minute${minutes === 1 ? '' : 's'}`,
 				].filter(Boolean);
-				timeLeftLine = `Time left: ${segments.join(' ')} (${formatted})`;
+				timeLeftLine = `:clock7: **Time left**: ${segments.join(' ')} (${formatted} GMT)`;
 			}
 		}
 	}
 
 	const rankingLines = divisionTotals.map((division, index) => {
-		const rank = index + 1;
-		return `${rank}. ${division.name}: ${formatNumber(division.total)} kills`;
+		const icon =
+			index == 0
+				? ':first_place:'
+				: index == 1
+					? ':second_place:'
+					: index == 2
+						? ':third_place:'
+						: index == 3
+							? '<:helldad:1316506358211805244>'
+							: '<:helldads_baby:1316435213559136316>';
+		return `${icon} — ${division.logo} **${division.name}**: ${formatNumber(division.total)} kills`;
 	});
 
 	const highestLine = highestSubmission
-		? `Highest result per mission: ${highestSubmission.name || `<@${highestSubmission.user}>`} with ${formatNumber(
-				highestSubmission.kills,
-			)} kills`
+		? `<:xdad:1419602524545093692> Highest result per mission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.kills)} kills`
 		: 'Highest result per mission: N/A';
 
 	const message = [
-		'King of the Kill - Season 2',
+		'# King of the Kill - Season 2',
 		'',
+		'## Leaderboard',
 		...rankingLines,
 		'',
-		`Total kills: ${formatNumber(totalKills)}`,
-		`Total submissions: ${formatNumber(totalSubmissions)}`,
-		`Average kills: ${formatNumber(averageKills)}`,
+		`:trophy: Total kills: ${formatNumber(totalKills)}`,
+		`:chart_with_upwards_trend: Total submissions: ${formatNumber(totalSubmissions)}`,
+		`:bar_chart: Average kills: ${formatNumber(averageKills)}`,
 		highestLine,
 		'',
 		timeLeftLine,
 		'',
-		'Use /submit to contribute your kill count after each mission! If you beat the highest result per mission, you must attach a screenshot as proof.',
+		'-# Use `/submit` to contribute your kill count after each mission! If you beat the highest result per mission, you must attach a screenshot as proof. Learn more about our divisions in <#1345040640949489674>.',
 	].join('\n');
 
 	return Response.json({
