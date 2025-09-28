@@ -202,7 +202,6 @@ export async function handler(interaction, env, ctx) {
 		});
 	}
 
-	// TEMPORAY DISABLE FOR REFACTORING
 	let totals = 0;
 	try {
 		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId, division.column);
@@ -210,11 +209,10 @@ export async function handler(interaction, env, ctx) {
 		console.error('Error reading user totals', err);
 	}
 
-	const messageLines = [`<@${userId}> submitted **${formatNumber(kills)} kills** to **${division.display}**. Thank you for your support!`];
-	messageLines.push(`Total contribution: ${formatNumber(totals)}`);
+	const message = `<@${userId}> submitted **${formatNumber(kills)} kills** to **${division.display}**. Thank you for your support!\nTotal contribution: ${formatNumber(totals)}`;
 
 	return Response.json({
 		type: 4,
-		data: { content: messageLines.join('\n') },
+		data: { content: message },
 	});
 }
