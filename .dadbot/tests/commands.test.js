@@ -41,10 +41,12 @@ function createFakeDB(state = {}) {
 					this.params = params;
 					return this;
 				},
-				async all() {
-					if (sql.includes('ORDER BY date DESC LIMIT 3')) {
-						return { results: data.recent };
+				async first() {
+					if (sql.includes('SELECT COUNT(*) AS cnt FROM submissions')) {
+						return data.count;
 					}
+				},
+				async all() {
 					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('WHERE event_key = ? AND user = ?')) {
 						return { results: [data.userTotals] };
 					}
@@ -276,16 +278,10 @@ test('submit command rejects invalid payloads', async () => {
 	assert.ok(jsonCap.data.content.includes('Kill count exceptionally high, congratulations!'));
 });
 
-/*
-// TODO: DISABLED UNTIL REFACTOR
 test('submit command enforces rate limit after three submissions', async () => {
 	const now = Date.now();
-	const recent = [
-		{ user: '1', date: new Date(now - 60 * 1000).toISOString() },
-		{ user: '1', date: new Date(now - 2 * 60 * 1000).toISOString() },
-		{ user: '1', date: new Date(now - 3 * 60 * 1000).toISOString() },
-	];
-	const db = createFakeDB({ recent });
+	const count = { cnt: 3 };
+	const db = createFakeDB({ count });
 	const env = { STATISTICS_DB: db, HELLDADS_CURRENT_EVENT_KEY: 'kotks2' };
 	const interaction = {
 		data: { options: [{ name: 'science', value: 100 }] },
@@ -296,7 +292,6 @@ test('submit command enforces rate limit after three submissions', async () => {
 	console.log(json.data.content);
 	assert.ok(json.data.content.includes('wait at least 5 minutes'));
 });
-*/
 
 test('event command aggregates event results', async () => {
 	const db = createFakeDB({

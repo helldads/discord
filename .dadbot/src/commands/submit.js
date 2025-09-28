@@ -122,10 +122,13 @@ function parseOptions(interaction) {
 	return options;
 }
 
-async function getRecentSubmissions(db, eventKey) {
-	const sql = 'SELECT user, date FROM submissions WHERE event_key = ? ORDER BY date DESC LIMIT 3;';
-	const res = await db.prepare(sql).bind(eventKey).all();
-	return res?.results || [];
+async function countRecentSubmissions(db, eventKey, user) {
+	const date = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+	const row = await db
+		.prepare('SELECT COUNT(*) AS cnt FROM submissions WHERE event_key = ? AND user = ? AND date >= ?')
+		.bind(eventKey, user, date)
+		.first();
+	return row ? Number(row.cnt) : 0;
 }
 
 async function getUserTotals(db, eventKey, userId) {
@@ -176,27 +179,21 @@ export async function handler(interaction, env, ctx) {
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
-	// TODO: Refactor to move logic into query
-	/*
 	try {
-		const recent = await getRecentSubmissions(env.STATISTICS_DB, eventKey);
-		if (recent.length === 3 && recent.every((entry) => String(entry.user) === userId)) {
-			const lastTimestamp = new Date(recent[0].date || 0).getTime();
-			const diffMinutes = (Date.now() - lastTimestamp) / (60 * 1000);
-			if (diffMinutes < 5) {
-				return Response.json({
-					type: 4,
-					data: {
-						content: 'You have submitted three times in a row. Please wait at least 5 minutes before submitting again.',
-						flags: 64,
-					},
-				});
-			}
+		const count = await countRecentSubmissions(env.STATISTICS_DB, eventKey, userId);
+		console.log('Count:', count);
+		if (count >= 3) {
+			return Response.json({
+				type: 4,
+				data: {
+					content: 'You have submitted three times in a row. Please wait at least 5 minutes before submitting again.',
+					flags: 64,
+				},
+			});
 		}
 	} catch (err) {
 		console.error('Error checking submission rate limit', err);
 	}
-	*/
 
 	const now = new Date().toISOString();
 	const columns = ['user', 'name', 'date', 'event_key', division.column];
