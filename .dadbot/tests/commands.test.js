@@ -217,12 +217,9 @@ test('submit command records kills and returns totals', async () => {
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
 	assert.ok(json.data.content.includes('submitted 750 kills to Science Team'));
-	// TODO: Refactoring
-	/*
 	assert.ok(json.data.content.includes('Total contribution:'));
 	assert.ok(json.data.content.includes('Science Team: 3,460'));
 	assert.ok(json.data.content.includes('Baldzerkers: 450'));
-	*/
 });
 
 test('submit command fails with no active event', async () => {
@@ -289,7 +286,6 @@ test('submit command enforces rate limit after three submissions', async () => {
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	console.log(json.data.content);
 	assert.ok(json.data.content.includes('wait at least 5 minutes'));
 });
 
@@ -315,10 +311,8 @@ test('event command aggregates event results', async () => {
 		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
-	console.log('END:', env.HELLDADS_CURRENT_EVENT_END);
 	const res = await eventHandler({ data: {} }, env, {});
 	const json = await readJson(res);
-	console.log(json.data.content);
 	assert.ok(json.data.content.includes('King of the Kill - Season 2'));
 	assert.ok(json.data.content.includes(':first_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 kills'));
 	assert.ok(

@@ -213,7 +213,6 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	// TEMPORAY DISABLE FOR REFACTORING
-	/*
 	let totals = {};
 	try {
 		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId);
@@ -227,14 +226,12 @@ export async function handler(interaction, env, ctx) {
 		.sort((a, b) => b.total - a.total)
 		.map((entry) => `- ${entry.name}: ${formatNumber(entry.total)}`);
 
-  */
 	const messageLines = [`<@${userId}> submitted ${formatNumber(kills)} kills to ${division.display}. Thank you for your support!`];
-	/*
 	if (contributions.length) {
 		messageLines.push('Total contribution:');
 		messageLines.push(...contributions);
 	}
-	*/
+
 	return Response.json({
 		type: 4,
 		data: { content: messageLines.join('\n') },
