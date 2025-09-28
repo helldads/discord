@@ -45,6 +45,15 @@ function createFakeDB(state = {}) {
 					if (sql.includes('SELECT COUNT(*) AS cnt FROM submissions')) {
 						return data.count;
 					}
+					if (sql.includes('SUM(') && sql.includes('WHERE event_key = ? AND user = ?')) {
+						const match = sql.match(/SUM\(([^)]+)\)/);
+						const column = match?.[1];
+						if (column) {
+							const total = data.userTotals[column] ?? 0;
+							return { total };
+						}
+						return { total: 0 };
+					}
 				},
 				async all() {
 					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('WHERE event_key = ? AND user = ?')) {
@@ -207,7 +216,7 @@ test('modhelp command triggers fetch calls', async () => {
 
 test('submit command records kills and returns totals', async () => {
 	const db = createFakeDB({
-		userTotals: { science: 3460, baldzerkers: 450 },
+		userTotals: { event_kotk_science_kills: 3460 },
 	});
 	const env = { STATISTICS_DB: db, HELLDADS_CURRENT_EVENT_KEY: 'kotks2' };
 	const interaction = {
@@ -216,10 +225,8 @@ test('submit command records kills and returns totals', async () => {
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('submitted 750 kills to Science Team'));
-	assert.ok(json.data.content.includes('Total contribution:'));
-	assert.ok(json.data.content.includes('Science Team: 3,460'));
-	assert.ok(json.data.content.includes('Baldzerkers: 450'));
+	assert.ok(json.data.content.includes('submitted **750 kills** to **Science Team**'));
+	assert.ok(json.data.content.includes('Total contribution: 3,460'));
 });
 
 test('submit command fails with no active event', async () => {

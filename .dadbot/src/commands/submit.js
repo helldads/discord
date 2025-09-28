@@ -124,26 +124,17 @@ function parseOptions(interaction) {
 
 async function countRecentSubmissions(db, eventKey, user) {
 	const date = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-	const row = await db
+	const res = await db
 		.prepare('SELECT COUNT(*) AS cnt FROM submissions WHERE event_key = ? AND user = ? AND date >= ?')
 		.bind(eventKey, user, date)
 		.first();
-	return row ? Number(row.cnt) : 0;
+	return res ? Number(res.cnt) : 0;
 }
 
-async function getUserTotals(db, eventKey, userId) {
-	const sql = `
-    SELECT
-      SUM(event_kotk_diaper_kills) AS diaper,
-      SUM(event_kotk_baldzerkers_kills) AS baldzerkers,
-      SUM(event_kotk_science_kills) AS science,
-      SUM(event_kotk_crayon_kills) AS crayon,
-      SUM(event_kotk_snack_kills) AS snack
-    FROM submissions
-    WHERE event_key = ? AND user = ?;
-  `;
-	const res = await db.prepare(sql).bind(eventKey, userId).all();
-	return res?.results?.[0] || {};
+async function getUserTotals(db, eventKey, userId, column) {
+	const sql = `SELECT SUM(${column}) AS total FROM submissions WHERE event_key = ? AND user = ?;`;
+	const res = await db.prepare(sql).bind(eventKey, userId).first();
+	return res ? Number(res.total) : 0;
 }
 
 export async function handler(interaction, env, ctx) {
@@ -181,7 +172,6 @@ export async function handler(interaction, env, ctx) {
 
 	try {
 		const count = await countRecentSubmissions(env.STATISTICS_DB, eventKey, userId);
-		console.log('Count:', count);
 		if (count >= 3) {
 			return Response.json({
 				type: 4,
@@ -213,24 +203,15 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	// TEMPORAY DISABLE FOR REFACTORING
-	let totals = {};
+	let totals = 0;
 	try {
-		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId);
+		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId, division.column);
 	} catch (err) {
 		console.error('Error reading user totals', err);
 	}
 
-	const contributions = Object.entries(DIVISIONS)
-		.map(([key, info]) => ({ name: info.display, total: Number(totals[key] || 0) }))
-		.filter((entry) => entry.total > 0)
-		.sort((a, b) => b.total - a.total)
-		.map((entry) => `- ${entry.name}: ${formatNumber(entry.total)}`);
-
-	const messageLines = [`<@${userId}> submitted ${formatNumber(kills)} kills to ${division.display}. Thank you for your support!`];
-	if (contributions.length) {
-		messageLines.push('Total contribution:');
-		messageLines.push(...contributions);
-	}
+	const messageLines = [`<@${userId}> submitted **${formatNumber(kills)} kills** to **${division.display}**. Thank you for your support!`];
+	messageLines.push(`Total contribution: ${formatNumber(totals)}`);
 
 	return Response.json({
 		type: 4,
