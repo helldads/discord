@@ -97,9 +97,12 @@ function parseSubmission(options) {
 		return { error: 'Invalid kill count. Provide a positive number (max 2500).' };
 	}
 
+	// kills are prevalidated by discord as INT 1-3000
+	/*
 	if (kills <= 0) {
 		return { error: 'Kill count must be greater than zero.' };
 	}
+	*/
 
 	if (kills >= 3000) {
 		return {
@@ -173,6 +176,8 @@ export async function handler(interaction, env, ctx) {
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
+	// TODO: Refactor to move logic into query
+	/*
 	try {
 		const recent = await getRecentSubmissions(env.STATISTICS_DB, eventKey);
 		if (recent.length === 3 && recent.every((entry) => String(entry.user) === userId)) {
@@ -191,6 +196,7 @@ export async function handler(interaction, env, ctx) {
 	} catch (err) {
 		console.error('Error checking submission rate limit', err);
 	}
+	*/
 
 	const now = new Date().toISOString();
 	const columns = ['user', 'name', 'date', 'event_key', division.column];
@@ -209,6 +215,8 @@ export async function handler(interaction, env, ctx) {
 		});
 	}
 
+	// TEMPORAY DISABLE FOR REFACTORING
+	/*
 	let totals = {};
 	try {
 		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId);
@@ -222,12 +230,14 @@ export async function handler(interaction, env, ctx) {
 		.sort((a, b) => b.total - a.total)
 		.map((entry) => `- ${entry.name}: ${formatNumber(entry.total)}`);
 
+  */
 	const messageLines = [`<@${userId}> submitted ${formatNumber(kills)} kills to ${division.display}. Thank you for your support!`];
+	/*
 	if (contributions.length) {
 		messageLines.push('Total contribution:');
 		messageLines.push(...contributions);
 	}
-
+	*/
 	return Response.json({
 		type: 4,
 		data: { content: messageLines.join('\n') },
