@@ -15,6 +15,14 @@ The bot currently implements the following slash commands:
 - `/event` – Display the current event and statistics.
 - `/submit` – Submit your mission results for the current community event.
 
+## Technical prerequisites
+
+- Discord Application and Bot configuration for Webhook events
+  (https://discord.com/developers/applications)
+- Cloudflare account with a Compute (Worker) and S1 database,
+  plus install Wrangler locally for deployments
+  (https://developers.cloudflare.com/workers/)
+
 ## Events
 
 1. Once per day the bot posts a quote of the day into the main channel
@@ -69,6 +77,12 @@ Run automated tests with:
 
 ```bash
 npm test
+```
+
+Deploy the application to Cloudflare Compute (Workers)
+
+```bash
+npm run deploy
 ```
 
 
