@@ -218,7 +218,11 @@ test('submit command records kills and returns totals', async () => {
 	const db = createFakeDB({
 		userTotals: { event_kotk_science_kills: 3460 },
 	});
-	const env = { STATISTICS_DB: db, HELLDADS_CURRENT_EVENT_KEY: 'kotks2' };
+	const env = {
+		STATISTICS_DB: db,
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
+	};
 	const interaction = {
 		data: { options: [{ name: 'science', value: 750 }] },
 		member: { user: { id: '1', username: 'Tester' } },
@@ -230,18 +234,36 @@ test('submit command records kills and returns totals', async () => {
 });
 
 test('submit command fails with no active event', async () => {
-	const env = { HELLDADS_CURRENT_EVENT_KEY: '', HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString() };
+	let env = { HELLDADS_CURRENT_EVENT_KEY: 'kotks2', HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString() };
 	const interaction = {
 		data: { options: [{ name: 'science', value: 100 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
-	const res = await submitHandler(interaction, env, {});
-	const json = await readJson(res);
-	assert.ok(json.data.content.includes('No event is currently active.'));
+	const resPastDate = await submitHandler(interaction, env, {});
+	const jsonPastDate = await readJson(resPastDate);
+	assert.ok(jsonPastDate.data.content.includes('No event is currently active.'));
+
+	// empty date
+	env.HELLDADS_CURRENT_EVENT_END = '';
+	const resNoDate = await submitHandler(interaction, env, {});
+	const jsonNoDate = await readJson(resNoDate);
+	assert.ok(jsonNoDate.data.content.includes('No event is currently active.'));
+
+	// empty eventkey
+	env.HELLDADS_CURRENT_EVENT_KEY = '';
+	env.HELLDADS_CURRENT_EVENT_END = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString();
+
+	const resNoEvent = await submitHandler(interaction, env, {});
+	const jsonEvent = await readJson(resNoEvent);
+	assert.ok(jsonEvent.data.content.includes('No event is currently active.'));
 });
 
 test('submit command rejects invalid payloads', async () => {
-	const env = { STATISTICS_DB: createFakeDB(), HELLDADS_CURRENT_EVENT_KEY: 'kotks2' };
+	const env = {
+		STATISTICS_DB: createFakeDB(),
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
+	};
 	const noDivision = { data: { options: [] }, member: { user: { id: '1' } } };
 	const multipleDivisions = {
 		data: {
@@ -286,7 +308,11 @@ test('submit command enforces rate limit after three submissions', async () => {
 	const now = Date.now();
 	const count = { cnt: 3 };
 	const db = createFakeDB({ count });
-	const env = { STATISTICS_DB: db, HELLDADS_CURRENT_EVENT_KEY: 'kotks2' };
+	const env = {
+		STATISTICS_DB: db,
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
+	};
 	const interaction = {
 		data: { options: [{ name: 'science', value: 100 }] },
 		member: { user: { id: '1', username: 'Tester' } },

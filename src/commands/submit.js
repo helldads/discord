@@ -142,20 +142,22 @@ export async function handler(interaction, env, ctx) {
 
 	// safeguard to prevent submissions once the event has ended
 	const eventEnd = env.HELLDADS_CURRENT_EVENT_END;
-	if (eventEnd) {
+	let eventActive = false;
+	if (eventKey !== '' && eventEnd !== '') {
 		const endDate = new Date(eventEnd);
 		if (!Number.isNaN(endDate.getTime())) {
 			const diffMs = endDate.getTime() - Date.now();
-			if (diffMs <= 0) {
-				return Response.json({
-					type: 4,
-					data: {
-						content: 'No event is currently active.',
-						flags: 64,
-					},
-				});
-			}
+			eventActive = diffMs >= 0;
 		}
+	}
+	if (!eventActive) {
+		return Response.json({
+			type: 4,
+			data: {
+				content: 'No event is currently active.',
+				flags: 64,
+			},
+		});
 	}
 
 	const options = parseOptions(interaction);
