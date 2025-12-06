@@ -10,7 +10,7 @@ export const command = {
 	options: [
 		{
 			name: 'samples',
-			description: 'How many samples did you personally extract?',
+			description: 'How many samples did you personally extract in your last mission?',
 			type: 4, // INTEGER
 			required: true,
 			min_value: 1,
