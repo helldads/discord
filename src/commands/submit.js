@@ -14,7 +14,6 @@ export const command = {
 			type: 4, // INTEGER
 			required: true,
 			min_value: 1,
-			max_value: MAX_SUBMISSION,
 		},
 	],
 };
