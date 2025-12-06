@@ -1,72 +1,18 @@
 import { formatNumber } from '../lib/format.js';
 
-const EVENT_KEY = 'kotks2';
-const MAX_SUBMISSION = 3000;
-
-const DIVISIONS = {
-	diaper: {
-		column: 'event_kotk_diaper_kills',
-		display: 'Diaper Division',
-	},
-	baldzerkers: {
-		column: 'event_kotk_baldzerkers_kills',
-		display: 'Baldzerkers',
-	},
-	science: {
-		column: 'event_kotk_science_kills',
-		display: 'Science Team',
-	},
-	crayon: {
-		column: 'event_kotk_crayon_kills',
-		display: 'Crayon Commandos',
-	},
-	snack: {
-		column: 'event_kotk_snack_kills',
-		display: 'S.N.A.C.K. Division',
-	},
-};
+const EVENT_KEY = 'reckoning2025';
+const MAX_SUBMISSION = 50;
+const EVENT_COLUMN = 'event_rec25_samples';
 
 export const command = {
 	name: 'submit',
-	description: 'Submit your mission kills for King of the Kill - Season 2.',
+	description: 'Submit how many samples you personally extracted.',
 	options: [
 		{
-			name: 'baldzerkers',
-			description: 'Kills scored for the Baldzerkers division',
+			name: 'samples',
+			description: 'How many samples did you personally extract?',
 			type: 4, // INTEGER
-			required: false,
-			min_value: 1,
-			max_value: MAX_SUBMISSION,
-		},
-		{
-			name: 'crayon',
-			description: 'Kills scored for the Crayon Commandos division',
-			type: 4,
-			required: false,
-			min_value: 1,
-			max_value: MAX_SUBMISSION,
-		},
-		{
-			name: 'diaper',
-			description: 'Kills scored for the Diaper Division',
-			type: 4,
-			required: false,
-			min_value: 1,
-			max_value: MAX_SUBMISSION,
-		},
-		{
-			name: 'science',
-			description: 'Kills scored for the Science Team division',
-			type: 4,
-			required: false,
-			min_value: 1,
-			max_value: MAX_SUBMISSION,
-		},
-		{
-			name: 'snack',
-			description: 'Kills scored for the S.N.A.C.K. Division',
-			type: 4,
-			required: false,
+			required: true,
 			min_value: 1,
 			max_value: MAX_SUBMISSION,
 		},
@@ -76,42 +22,28 @@ export const command = {
 function parseSubmission(options) {
 	const provided = Object.entries(options).filter(([, value]) => value !== undefined && value !== null);
 
-	if (provided.length === 0) {
-		return { error: 'Please submit kills for exactly one division.' };
+	const [optionKey, samplesRaw] = provided[0];
+	if (optionKey !== 'samples') {
+		return { error: 'Unknown submission field.' };
 	}
 
-	if (provided.length > 1) {
-		return {
-			error: 'Only one division can be submitted at a time. Please submit separate commands.',
-		};
+	const samples = Number(samplesRaw);
+	if (!Number.isFinite(samples) || Number.isNaN(samples)) {
+		return { error: 'Invalid sample count. Provide a positive number (max 50).' };
 	}
 
-	const [divisionKey, killsRaw] = provided[0];
-	const division = DIVISIONS[divisionKey];
-	if (!division) {
-		return { error: 'Unknown division selected.' };
+	if (samples <= 0) {
+		return { error: 'Sample count must be greater than zero.' };
 	}
 
-	const kills = Number(killsRaw);
-	if (!Number.isFinite(kills) || Number.isNaN(kills)) {
-		return { error: 'Invalid kill count. Provide a positive number (max 2500).' };
-	}
-
-	// kills are prevalidated by discord as INT 1-3000
-	/*
-	if (kills <= 0) {
-		return { error: 'Kill count must be greater than zero.' };
-	}
-	*/
-
-	if (kills >= 3000) {
+	if (samples > MAX_SUBMISSION) {
 		return {
 			error:
-				'Kill count exceptionally high, congratulations! Please submit a screenshot to the mods first, so they can verify your results and add them manually.',
+				'Sample count exceptionally high. Please provide a screenshot for moderators so they can verify your results and add them manually.',
 		};
 	}
 
-	return { division, kills };
+	return { samples };
 }
 
 function parseOptions(interaction) {
@@ -161,7 +93,7 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const options = parseOptions(interaction);
-	const { division, kills, error } = parseSubmission(options);
+	const { samples, error } = parseSubmission(options);
 	if (error) {
 		return Response.json({
 			type: 4,
@@ -188,8 +120,8 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const now = new Date().toISOString();
-	const columns = ['user', 'name', 'date', 'event_key', division.column];
-	const values = [userId, username, now, eventKey, kills];
+	const columns = ['user', 'name', 'date', 'event_key', EVENT_COLUMN];
+	const values = [userId, username, now, eventKey, samples];
 
 	try {
 		const placeholders = columns.map(() => '?').join(', ');
@@ -206,12 +138,12 @@ export async function handler(interaction, env, ctx) {
 
 	let totals = 0;
 	try {
-		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId, division.column);
+		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId, EVENT_COLUMN);
 	} catch (err) {
 		console.error('Error reading user totals', err);
 	}
 
-	const message = `<@${userId}> submitted **${formatNumber(kills)} kills** to **${division.display}**. Thank you for your support!\nTotal contribution: ${formatNumber(totals)}`;
+	const message = `<@${userId}> submitted **${formatNumber(samples)} samples** . Thank you for your support!\nTotal contribution: ${formatNumber(totals)}`;
 
 	return Response.json({
 		type: 4,

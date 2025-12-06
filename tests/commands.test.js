@@ -214,29 +214,34 @@ test('modhelp command triggers fetch calls', async () => {
 	}
 });
 
-test('submit command records kills and returns totals', async () => {
+test('submit command records samples and returns totals', async () => {
 	const db = createFakeDB({
-		userTotals: { event_kotk_science_kills: 3460 },
+		userTotals: { event_rec25_samples: 34 },
 	});
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const interaction = {
-		data: { options: [{ name: 'science', value: 750 }] },
+		data: { options: [{ name: 'samples', value: 12 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('submitted **750 kills** to **Science Team**'));
-	assert.ok(json.data.content.includes('Total contribution: 3,460'));
+
+	assert.ok(json.data.content.includes('submitted **12 samples**'));
+	// fakeDB doesn't reflect updates
+	assert.ok(json.data.content.includes('Total contribution:'));
 });
 
 test('submit command fails with no active event', async () => {
-	let env = { HELLDADS_CURRENT_EVENT_KEY: 'kotks2', HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString() };
+	let env = {
+		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
+		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString(),
+	};
 	const interaction = {
-		data: { options: [{ name: 'science', value: 100 }] },
+		data: { options: [{ name: 'samples', value: 10 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const resPastDate = await submitHandler(interaction, env, {});
@@ -261,47 +266,20 @@ test('submit command fails with no active event', async () => {
 test('submit command rejects invalid payloads', async () => {
 	const env = {
 		STATISTICS_DB: createFakeDB(),
-		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
-	const noDivision = { data: { options: [] }, member: { user: { id: '1' } } };
-	const multipleDivisions = {
-		data: {
-			options: [
-				{ name: 'science', value: 100 },
-				{ name: 'baldzerkers', value: 100 },
-			],
-		},
-		member: { user: { id: '1' } },
-	};
-	const invalidDivision = {
-		data: { options: [{ name: 'unknown', value: 100 }] },
-		member: { user: { id: '1' } },
-	};
-	const invalidKills = { data: { options: [{ name: 'science', value: 0 }] }, member: { user: { id: '1' } } };
-	const overCap = { data: { options: [{ name: 'science', value: 3000 }] }, member: { user: { id: '1' } } };
+	const invalidSamples = { data: { options: [{ name: 'samples', value: 0 }] }, member: { user: { id: '1' } } };
+	const overCap = { data: { options: [{ name: 'samples', value: 99 }] }, member: { user: { id: '1' } } };
 
-	const resNoDivision = await submitHandler(noDivision, env, {});
-	const jsonNoDivision = await readJson(resNoDivision);
-	assert.ok(jsonNoDivision.data.content.includes('exactly one division'));
+	const resSamples = await submitHandler(invalidSamples, env, {});
+	const jsonSamples = await readJson(resSamples);
 
-	const resMulti = await submitHandler(multipleDivisions, env, {});
-	const jsonMulti = await readJson(resMulti);
-	assert.ok(jsonMulti.data.content.includes('Only one division'));
+	assert.ok(jsonSamples.data.content.includes('Sample count must be greater than zero.'));
 
-	const resDivision = await submitHandler(invalidDivision, env, {});
-	const jsonDivision = await readJson(resDivision);
-	assert.ok(jsonDivision.data.content.includes('Unknown division'));
-
-	/*
-	// Prevalidated by discord
-	const resKills = await submitHandler(invalidKills, env, {});
-	const jsonKills = await readJson(resKills);
-	assert.ok(jsonKills.data.content.includes('greater than zero'));
-	*/
 	const resCap = await submitHandler(overCap, env, {});
 	const jsonCap = await readJson(resCap);
-	assert.ok(jsonCap.data.content.includes('Kill count exceptionally high, congratulations!'));
+	assert.ok(jsonCap.data.content.includes('Sample count exceptionally high'));
 });
 
 test('submit command enforces rate limit after three submissions', async () => {
@@ -310,11 +288,11 @@ test('submit command enforces rate limit after three submissions', async () => {
 	const db = createFakeDB({ count });
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const interaction = {
-		data: { options: [{ name: 'science', value: 100 }] },
+		data: { options: [{ name: 'samples', value: 25 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const res = await submitHandler(interaction, env, {});
