@@ -1,18 +1,11 @@
 import { formatNumber } from '../lib/format.js';
 
-const EVENT_KEY = 'kotks2';
-
-const DIVISIONS = [
-	{ key: 'science', column: 'event_kotk_science_kills', name: 'Science Team', logo: '<:st_logo:1345027109944299562>' },
-	{ key: 'baldzerkers', column: 'event_kotk_baldzerkers_kills', name: 'Baldzerkers', logo: '<:bz_logo:1345027059327438848>' },
-	{ key: 'diaper', column: 'event_kotk_diaper_kills', name: 'Diaper Division', logo: '<:dd_logo:1345027087446052914>' },
-	{ key: 'crayon', column: 'event_kotk_crayon_kills', name: 'Crayon Commandos', logo: '<:cc_logo:1345027134862655549>' },
-	{ key: 'snack', column: 'event_kotk_snack_kills', name: 'S.N.A.C.K. Division', logo: '<:sd_logo:1395099109203116083>' },
-];
+const EVENT_KEY = 'reckoning2025';
+const EVENT_COLUMN = 'event_rec25_samples';
 
 export const command = {
 	name: 'event',
-	description: 'Display summary of the King of the Kill - Season 2 event.',
+	description: 'Display summary of the Festival of Reckoning event.',
 };
 
 export async function handler(interaction, env, ctx) {
@@ -20,8 +13,9 @@ export async function handler(interaction, env, ctx) {
 
 	let totalsRow = {};
 	try {
-		const columns = DIVISIONS.map((division) => `SUM(${division.column}) AS ${division.key}`).join(', ');
-		const res = await env.STATISTICS_DB.prepare(`SELECT ${columns}, COUNT(*) AS submissions FROM submissions WHERE event_key = ?;`)
+		const res = await env.STATISTICS_DB.prepare(
+			`SELECT SUM(${EVENT_COLUMN}) AS samples, COUNT(*) AS submissions FROM submissions WHERE event_key = ?;`,
+		)
 			.bind(eventKey)
 			.all();
 		totalsRow = res?.results?.[0] || {};
@@ -29,26 +23,28 @@ export async function handler(interaction, env, ctx) {
 		console.error('Error reading event totals', err);
 	}
 
-	const divisionTotals = DIVISIONS.map((division) => ({
-		name: division.name,
-		logo: division.logo,
-		total: Number(totalsRow?.[division.key] || 0),
-	}));
+	let leaderboard = [];
+	try {
+		const res = await env.STATISTICS_DB.prepare(
+			`SELECT user, SUM(${EVENT_COLUMN}) AS samples FROM submissions WHERE event_key = ? GROUP BY user, name ORDER BY samples DESC LIMIT 10;`,
+		)
+			.bind(eventKey)
+			.all();
+		leaderboard = res?.results || [];
+	} catch (err) {
+		console.error('Error reading leaderboard', err);
+	}
 
-	divisionTotals.sort((a, b) => b.total - a.total);
-
-	const totalKills = divisionTotals.reduce((sum, division) => sum + division.total, 0);
+	const totalSamples = Number(totalsRow?.samples || 0);
 	const totalSubmissions = Number(totalsRow?.submissions || 0);
-	const averageKills = totalSubmissions > 0 ? Math.floor(totalKills / totalSubmissions) : 0;
+	const averageSamples = totalSubmissions > 0 ? Math.floor(totalSamples / totalSubmissions) : 0;
 
 	let highestSubmission = null;
 	try {
-		const unionQueries = DIVISIONS.map(
-			(division) =>
-				`SELECT user, name, '${division.name}' AS division, ${division.column} AS kills, date FROM submissions WHERE event_key = ? AND ${division.column} IS NOT NULL`,
-		).join(' UNION ALL ');
-		const res = await env.STATISTICS_DB.prepare(`${unionQueries} ORDER BY kills DESC LIMIT 1;`)
-			.bind(...Array(DIVISIONS.length).fill(eventKey))
+		const res = await env.STATISTICS_DB.prepare(
+			`SELECT user, ${EVENT_COLUMN} AS samples FROM submissions WHERE event_key = ? ORDER BY ${EVENT_COLUMN} DESC LIMIT 1;`,
+		)
+			.bind(eventKey)
 			.all();
 		highestSubmission = res?.results?.[0] || null;
 	} catch (err) {
@@ -94,38 +90,29 @@ export async function handler(interaction, env, ctx) {
 		}
 	}
 
-	const rankingLines = divisionTotals.map((division, index) => {
-		const icon =
-			index == 0
-				? ':first_place:'
-				: index == 1
-					? ':second_place:'
-					: index == 2
-						? ':third_place:'
-						: index == 3
-							? '<:helldad:1316506358211805244>'
-							: '<:helldads_baby:1316435213559136316>';
-		return `${icon} — ${division.logo} **${division.name}**: ${formatNumber(division.total)} kills`;
-	});
+	const leaderboardLines = leaderboard.map(
+		(entry, index) => `${index + 1}. <@${entry.user}>: ${formatNumber(Number(entry.samples || 0))} samples`,
+	);
 
-	const highestLine = highestSubmission
-		? `<:xdad:1419602524545093692> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.kills)} kills`
-		: 'Highest result per submission: N/A';
+	const highestLine =
+		highestSubmission && Number(highestSubmission.samples || 0) > 0
+			? `<:helldad:1316506358211805244> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(Number(highestSubmission.samples || 0))} samples`
+			: 'Highest result per submission: N/A';
 
 	const message = [
-		'# King of the Kill - Season 2',
+		'# Festival of Reckoning: Holiday Sample Donation Drive',
 		'',
 		'## Leaderboard',
-		...rankingLines,
+		...(leaderboardLines.length > 0 ? leaderboardLines : ['No submissions yet.']),
 		'',
-		`:trophy: Total kills: ${formatNumber(totalKills)}`,
+		`:trophy: Total samples: ${formatNumber(totalSamples)}`,
 		`:chart_with_upwards_trend: Total submissions: ${formatNumber(totalSubmissions)}`,
-		`:bar_chart: Average kills: ${formatNumber(averageKills)}`,
+		`:bar_chart: Average samples: ${formatNumber(averageSamples)}`,
 		highestLine,
 		'',
 		timeLeftLine,
 		'',
-		'-# Use `/submit` to contribute your kill count after each mission! If you beat the highest result per mission, you must attach a screenshot as proof. Learn more about our divisions in <#1345040640949489674>.',
+		'Use /submit to contribute your personal sample count after each extraction! If you beat the highest result per extraction, you must attach a screenshot as proof.',
 	].join('\n');
 
 	return Response.json({

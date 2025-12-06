@@ -30,6 +30,7 @@ function createFakeDB(state = {}) {
 		userTotals: {},
 		totals: {},
 		highest: null,
+		contributors: [],
 	};
 	const data = { ...defaults, ...state };
 	return {
@@ -56,13 +57,16 @@ function createFakeDB(state = {}) {
 					}
 				},
 				async all() {
-					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('WHERE event_key = ? AND user = ?')) {
-						return { results: [data.userTotals] };
+					if (sql.includes('UNION ALL') && sql.includes('ORDER BY kills DESC LIMIT 1')) {
+						return { results: data.highest ? [data.highest] : [] };
 					}
-					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('COUNT(*) AS submissions')) {
+					if (sql.includes('SUM(event_rec25_samples') && sql.includes('COUNT(*) AS submissions')) {
 						return { results: [data.totals] };
 					}
-					if (sql.includes('UNION ALL') && sql.includes('ORDER BY kills DESC LIMIT 1')) {
+					if (sql.includes('GROUP BY user') && sql.includes('event_rec25_samples')) {
+						return { results: data.contributors };
+					}
+					if (sql.includes('ORDER BY event_rec25_samples DESC LIMIT 1')) {
 						return { results: data.highest ? [data.highest] : [] };
 					}
 					return { results: [] };
@@ -303,38 +307,40 @@ test('submit command enforces rate limit after three submissions', async () => {
 test('event command aggregates event results', async () => {
 	const db = createFakeDB({
 		totals: {
-			baldzerkers: 28500,
-			crayon: 21500,
-			diaper: 25100,
-			science: 30000,
-			snack: 15300,
-			submissions: 240,
+			samples: 377,
+			submissions: 42,
 		},
+		contributors: [
+			{ user: '1', name: 'usera', samples: 100 },
+			{ user: '2', name: 'userb', samples: 88 },
+			{ user: '3', name: 'userc', samples: 56 },
+			{ user: '4', name: 'usera', samples: 54 },
+			{ user: '5', name: 'userb', samples: 48 },
+			{ user: '6', name: 'userc', samples: 47 },
+			{ user: '7', name: 'usera', samples: 44 },
+			{ user: '8', name: 'userb', samples: 36 },
+			{ user: '9', name: 'userc', samples: 24 },
+			{ user: '10', name: 'userc', samples: 22 },
+		],
 		highest: {
-			user: '99',
-			name: 'xnShiLong',
-			division: 'Science Team',
-			kills: 1200,
+			user: '1',
+			name: 'usera',
+			samples: 42,
 		},
 	});
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const res = await eventHandler({ data: {} }, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('King of the Kill - Season 2'));
-	assert.ok(json.data.content.includes(':first_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 kills'));
-	assert.ok(
-		json.data.content.includes(
-			'<:helldads_baby:1316435213559136316> — <:sd_logo:1395099109203116083> **S.N.A.C.K. Division**: 15,300 kills',
-		),
-	);
-	assert.ok(json.data.content.includes('Total kills: 120,400'));
-	assert.ok(json.data.content.includes('Total submissions: 240'));
-	assert.ok(json.data.content.includes('Average kills: 501'));
-	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per submission: <@99> with 1,200 kills'));
-	assert.ok(json.data.content.includes('**Time left**:'));
-	assert.ok(json.data.content.includes('Use `/submit` to contribute your kill count'));
+	assert.ok(json.data.content.includes('Festival of Reckoning: Holiday Sample Donation Drive'));
+	assert.ok(json.data.content.includes('1. <@1>: 100 samples'));
+	assert.ok(json.data.content.includes('3. <@3>: 56 samples'));
+	assert.ok(json.data.content.includes('Total samples: 377'));
+	assert.ok(json.data.content.includes('Total submissions: 42'));
+	assert.ok(json.data.content.includes('Average samples: 8'));
+	assert.ok(json.data.content.includes('<:helldad:1316506358211805244> Highest result per submission: <@1> with 42 samples'));
+	assert.ok(json.data.content.includes('Use /submit to contribute your personal sample count'));
 });
