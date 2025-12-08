@@ -54,7 +54,7 @@ function parseOptions(interaction) {
 }
 
 async function countRecentSubmissions(db, eventKey, user) {
-	const date = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+	const date = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 	const res = await db
 		.prepare('SELECT COUNT(*) AS cnt FROM submissions WHERE event_key = ? AND user = ? AND date >= ?')
 		.bind(eventKey, user, date)
