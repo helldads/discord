@@ -1,7 +1,7 @@
 import { formatNumber } from '../lib/format.js';
 
 const EVENT_KEY = 'reckoning2025';
-const MAX_SUBMISSION = 50;
+const MAX_SUBMISSION = 75;
 const EVENT_COLUMN = 'event_rec25_samples';
 
 export const command = {
