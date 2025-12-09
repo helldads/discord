@@ -1,7 +1,7 @@
 import { formatNumber } from '../lib/format.js';
 
 const EVENT_KEY = 'reckoning2025';
-const MAX_SUBMISSION = 75;
+const MAX_SUBMISSION = 100;
 const EVENT_COLUMN = 'event_rec25_samples';
 
 export const command = {
@@ -103,6 +103,8 @@ export async function handler(interaction, env, ctx) {
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
+	/*
+	// Temporarily disabled to save cpu time
 	try {
 		const count = await countRecentSubmissions(env.STATISTICS_DB, eventKey, userId);
 		if (count >= 3) {
@@ -117,6 +119,7 @@ export async function handler(interaction, env, ctx) {
 	} catch (err) {
 		console.error('Error checking submission rate limit', err);
 	}
+	*/
 
 	const now = new Date().toISOString();
 	const columns = ['user', 'name', 'date', 'event_key', EVENT_COLUMN];
