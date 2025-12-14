@@ -60,7 +60,7 @@
 	 */
 	"vars": {
 		"HELLDADS_CODE_OF_CONDUCT": "https://www.helldads.org/code-of-conduct",
-		"HELLDADS_CURRENT_EVENT_KEY": "reckoning2025",
+		"HELLDADS_CURRENT_EVENT_KEY": "",
 		"HELLDADS_CURRENT_EVENT_END": "2025-12-13T23:59:59.999Z",
 		"HELLDADS_QUOTES_DAILY_URL": "https://www.helldads.org/data/quotes/daily.json",
 		"HELLDADS_QUOTES_ALL_URL": "https://www.helldads.org/data/quotes/all.json",
@@ -82,4 +82,17 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
 	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"persist": true,
+			"invocation_logs": true,
+		},
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"persist": true,
+		},
+	},
 }
