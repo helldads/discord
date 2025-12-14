@@ -358,5 +358,5 @@ test('event command aggregates event results', async () => {
 	assert.ok(json.data.content.includes('Average per submissions: 501'));
 	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per submission: <@99> with 1,200'));
 	assert.ok(json.data.content.includes('**Time left**:'));
-	assert.ok(json.data.content.includes('Use `/submit` to contribute your stratagems used count'));
+	assert.ok(json.data.content.includes('Use `/submit` to report the number of stratagems used by your division after each mission!'));
 });

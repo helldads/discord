@@ -125,7 +125,7 @@ export async function handler(interaction, env, ctx) {
 		'',
 		timeLeftLine,
 		'',
-		'-# Use `/submit` to contribute your stratagems used count after each mission! If you beat the highest result per mission, you must attach a screenshot as proof. Learn more about our divisions in <#1345040640949489674>.',
+		'-# Use `/submit` to report the number of stratagems used by your division after each mission! If you beat the highest result per mission, you must attach a screenshot as proof. Learn more about our divisions in <#1345040640949489674>.',
 	].join('\n');
 
 	return Response.json({
