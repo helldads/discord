@@ -1,11 +1,18 @@
 import { formatNumber } from '../lib/format.js';
 
-const EVENT_KEY = 'reckoning2025';
-const EVENT_COLUMN = 'event_rec25_samples';
+const EVENT_KEY = 'hpp25';
+
+const DIVISIONS = [
+	{ key: 'science', column: 'event_science_count', name: 'Science Team', logo: '<:st_logo:1345027109944299562>' },
+	{ key: 'baldzerkers', column: 'event_baldzerkers_count', name: 'Baldzerkers', logo: '<:bz_logo:1345027059327438848>' },
+	{ key: 'diaper', column: 'event_diaper_count', name: 'Diaper Division', logo: '<:dd_logo:1345027087446052914>' },
+	{ key: 'crayon', column: 'event_crayon_count', name: 'Crayon Commandos', logo: '<:cc_logo:1345027134862655549>' },
+	{ key: 'snack', column: 'event_snack_count', name: 'S.N.A.C.K. Division', logo: '<:sd_logo:1395099109203116083>' },
+];
 
 export const command = {
 	name: 'event',
-	description: 'Display summary of the Festival of Reckoning event.',
+	description: 'Display summary of the Holiday Payload Program 2025 event.',
 };
 
 export async function handler(interaction, env, ctx) {
@@ -13,9 +20,8 @@ export async function handler(interaction, env, ctx) {
 
 	let totalsRow = {};
 	try {
-		const res = await env.STATISTICS_DB.prepare(
-			`SELECT SUM(${EVENT_COLUMN}) AS samples, COUNT(*) AS submissions FROM submissions WHERE event_key = ?;`,
-		)
+		const columns = DIVISIONS.map((division) => `SUM(${division.column}) AS ${division.key}`).join(', ');
+		const res = await env.STATISTICS_DB.prepare(`SELECT ${columns}, COUNT(*) AS submissions FROM submissions WHERE event_key = ?;`)
 			.bind(eventKey)
 			.all();
 		totalsRow = res?.results?.[0] || {};
@@ -23,28 +29,26 @@ export async function handler(interaction, env, ctx) {
 		console.error('Error reading event totals', err);
 	}
 
-	let leaderboard = [];
-	try {
-		const res = await env.STATISTICS_DB.prepare(
-			`SELECT user, SUM(${EVENT_COLUMN}) AS samples FROM submissions WHERE event_key = ? GROUP BY user, name ORDER BY samples DESC LIMIT 10;`,
-		)
-			.bind(eventKey)
-			.all();
-		leaderboard = res?.results || [];
-	} catch (err) {
-		console.error('Error reading leaderboard', err);
-	}
+	const divisionTotals = DIVISIONS.map((division) => ({
+		name: division.name,
+		logo: division.logo,
+		total: Number(totalsRow?.[division.key] || 0),
+	}));
 
-	const totalSamples = Number(totalsRow?.samples || 0);
+	divisionTotals.sort((a, b) => b.total - a.total);
+
+	const totalCount = divisionTotals.reduce((sum, division) => sum + division.total, 0);
 	const totalSubmissions = Number(totalsRow?.submissions || 0);
-	const averageSamples = totalSubmissions > 0 ? Math.floor(totalSamples / totalSubmissions) : 0;
+	const averageSubmissions = totalSubmissions > 0 ? Math.floor(totalCount / totalSubmissions) : 0;
 
 	let highestSubmission = null;
 	try {
-		const res = await env.STATISTICS_DB.prepare(
-			`SELECT user, ${EVENT_COLUMN} AS samples FROM submissions WHERE event_key = ? ORDER BY ${EVENT_COLUMN} DESC LIMIT 1;`,
-		)
-			.bind(eventKey)
+		const unionQueries = DIVISIONS.map(
+			(division) =>
+				`SELECT user, name, '${division.name}' AS division, ${division.column} AS submissions, date FROM submissions WHERE event_key = ? AND ${division.column} IS NOT NULL`,
+		).join(' UNION ALL ');
+		const res = await env.STATISTICS_DB.prepare(`${unionQueries} ORDER BY submissions DESC LIMIT 1;`)
+			.bind(...Array(DIVISIONS.length).fill(eventKey))
 			.all();
 		highestSubmission = res?.results?.[0] || null;
 	} catch (err) {
@@ -90,29 +94,38 @@ export async function handler(interaction, env, ctx) {
 		}
 	}
 
-	const leaderboardLines = leaderboard.map(
-		(entry, index) => `${index + 1}. <@${entry.user}>: ${formatNumber(Number(entry.samples || 0))} samples`,
-	);
+	const rankingLines = divisionTotals.map((division, index) => {
+		const icon =
+			index == 0
+				? ':first_place:'
+				: index == 1
+					? ':second_place:'
+					: index == 2
+						? ':third_place:'
+						: index == 3
+							? '<:helldad:1316506358211805244>'
+							: '<:helldads_baby:1316435213559136316>';
+		return `${icon} — ${division.logo} **${division.name}**: ${formatNumber(division.total)} stratagems`;
+	});
 
-	const highestLine =
-		highestSubmission && Number(highestSubmission.samples || 0) > 0
-			? `<:helldad:1316506358211805244> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(Number(highestSubmission.samples || 0))} samples`
-			: 'Highest result per submission: N/A';
+	const highestLine = highestSubmission
+		? `<:xdad:1419602524545093692> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.submissions)}`
+		: 'Highest result per submission: N/A';
 
 	const message = [
-		'# Festival of Reckoning: Holiday Sample Donation Drive',
+		'# Holiday Payload Program 2025',
 		'',
 		'## Leaderboard',
-		...(leaderboardLines.length > 0 ? leaderboardLines : ['No submissions yet.']),
+		...rankingLines,
 		'',
-		`:trophy: Total samples: ${formatNumber(totalSamples)}`,
+		`:trophy: Total: ${formatNumber(totalCount)}`,
 		`:chart_with_upwards_trend: Total submissions: ${formatNumber(totalSubmissions)}`,
-		`:bar_chart: Average samples: ${formatNumber(averageSamples)}`,
+		`:bar_chart: Average per submissions: ${formatNumber(averageSubmissions)}`,
 		highestLine,
 		'',
 		timeLeftLine,
 		'',
-		'Use /submit to contribute your personal sample count after each extraction! If you beat the highest result per extraction, you must attach a screenshot as proof.',
+		'-# Use `/submit` to contribute your stratagems used count after each mission! If you beat the highest result per mission, you must attach a screenshot as proof. Learn more about our divisions in <#1345040640949489674>.',
 	].join('\n');
 
 	return Response.json({

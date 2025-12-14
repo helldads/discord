@@ -30,7 +30,6 @@ function createFakeDB(state = {}) {
 		userTotals: {},
 		totals: {},
 		highest: null,
-		contributors: [],
 	};
 	const data = { ...defaults, ...state };
 	return {
@@ -57,16 +56,13 @@ function createFakeDB(state = {}) {
 					}
 				},
 				async all() {
-					if (sql.includes('UNION ALL') && sql.includes('ORDER BY kills DESC LIMIT 1')) {
-						return { results: data.highest ? [data.highest] : [] };
+					if (sql.includes('SUM(event_diaper_count') && sql.includes('WHERE event_key = ? AND user = ?')) {
+						return { results: [data.userTotals] };
 					}
-					if (sql.includes('SUM(event_rec25_samples') && sql.includes('COUNT(*) AS submissions')) {
+					if (sql.includes('SUM(event_diaper_count') && sql.includes('COUNT(*) AS submissions')) {
 						return { results: [data.totals] };
 					}
-					if (sql.includes('GROUP BY user') && sql.includes('event_rec25_samples')) {
-						return { results: data.contributors };
-					}
-					if (sql.includes('ORDER BY event_rec25_samples DESC LIMIT 1')) {
+					if (sql.includes('UNION ALL') && sql.includes('ORDER BY submissions DESC LIMIT 1')) {
 						return { results: data.highest ? [data.highest] : [] };
 					}
 					return { results: [] };
@@ -218,34 +214,29 @@ test('modhelp command triggers fetch calls', async () => {
 	}
 });
 
-test('submit command records samples and returns totals', async () => {
+test('submit command records stratagems and returns totals', async () => {
 	const db = createFakeDB({
-		userTotals: { event_rec25_samples: 34 },
+		userTotals: { event_science_count: 3460 },
 	});
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
+		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const interaction = {
-		data: { options: [{ name: 'samples', value: 12 }] },
+		data: { options: [{ name: 'science', value: 50 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-
-	assert.ok(json.data.content.includes('submitted **12 samples**'));
-	// fakeDB doesn't reflect updates
-	assert.ok(json.data.content.includes('Total contribution:'));
+	assert.ok(json.data.content.includes('reported **50 stratagems used** for **Science Team**'));
+	assert.ok(json.data.content.includes('Total contribution: 3,460'));
 });
 
 test('submit command fails with no active event', async () => {
-	let env = {
-		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
-		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString(),
-	};
+	let env = { HELLDADS_CURRENT_EVENT_KEY: 'hpp25', HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString() };
 	const interaction = {
-		data: { options: [{ name: 'samples', value: 10 }] },
+		data: { options: [{ name: 'science', value: 100 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const resPastDate = await submitHandler(interaction, env, {});
@@ -270,80 +261,102 @@ test('submit command fails with no active event', async () => {
 test('submit command rejects invalid payloads', async () => {
 	const env = {
 		STATISTICS_DB: createFakeDB(),
-		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
+		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
-	const invalidSamples = { data: { options: [{ name: 'samples', value: 0 }] }, member: { user: { id: '1' } } };
-	const overCap = { data: { options: [{ name: 'samples', value: 101 }] }, member: { user: { id: '1' } } };
+	const noDivision = { data: { options: [] }, member: { user: { id: '1' } } };
+	const multipleDivisions = {
+		data: {
+			options: [
+				{ name: 'science', value: 100 },
+				{ name: 'baldzerkers', value: 100 },
+			],
+		},
+		member: { user: { id: '1' } },
+	};
+	const invalidDivision = {
+		data: { options: [{ name: 'unknown', value: 100 }] },
+		member: { user: { id: '1' } },
+	};
+	//const invalidCount = { data: { options: [{ name: 'science', value: 0 }] }, member: { user: { id: '1' } } };
+	const overCap = { data: { options: [{ name: 'science', value: 3000 }] }, member: { user: { id: '1' } } };
 
-	const resSamples = await submitHandler(invalidSamples, env, {});
-	const jsonSamples = await readJson(resSamples);
+	const resNoDivision = await submitHandler(noDivision, env, {});
+	const jsonNoDivision = await readJson(resNoDivision);
+	assert.ok(jsonNoDivision.data.content.includes('Please submit stratagems used for your division.'));
 
-	assert.ok(jsonSamples.data.content.includes('Sample count must be greater than zero.'));
+	const resMulti = await submitHandler(multipleDivisions, env, {});
+	const jsonMulti = await readJson(resMulti);
+	assert.ok(jsonMulti.data.content.includes('Only one division can be submitted at a time.'));
 
+	const resDivision = await submitHandler(invalidDivision, env, {});
+	const jsonDivision = await readJson(resDivision);
+	assert.ok(jsonDivision.data.content.includes('Unknown division'));
+
+	/*
+	// Prevalidated by discord
+	const resKills = await submitHandler(invalidKills, env, {});
+	const jsonKills = await readJson(resKills);
+	assert.ok(jsonKills.data.content.includes('greater than zero'));
+	*/
 	const resCap = await submitHandler(overCap, env, {});
 	const jsonCap = await readJson(resCap);
-	assert.ok(jsonCap.data.content.includes('Sample count exceptionally high'));
+	assert.ok(jsonCap.data.content.includes('Submission count exceptionally high'));
 });
 
-/*
-// Temporarily disabled to save cpu time
 test('submit command enforces rate limit after three submissions', async () => {
 	const now = Date.now();
 	const count = { cnt: 3 };
 	const db = createFakeDB({ count });
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const interaction = {
-		data: { options: [{ name: 'samples', value: 25 }] },
+		data: { options: [{ name: 'science', value: 100 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
 	assert.ok(json.data.content.includes('wait at least 5 minutes'));
 });
-*/
 
 test('event command aggregates event results', async () => {
 	const db = createFakeDB({
 		totals: {
-			samples: 377,
-			submissions: 42,
+			baldzerkers: 28500,
+			crayon: 21500,
+			diaper: 25100,
+			science: 30000,
+			snack: 15300,
+			submissions: 240,
 		},
-		contributors: [
-			{ user: '1', name: 'usera', samples: 100 },
-			{ user: '2', name: 'userb', samples: 88 },
-			{ user: '3', name: 'userc', samples: 56 },
-			{ user: '4', name: 'usera', samples: 54 },
-			{ user: '5', name: 'userb', samples: 48 },
-			{ user: '6', name: 'userc', samples: 47 },
-			{ user: '7', name: 'usera', samples: 44 },
-			{ user: '8', name: 'userb', samples: 36 },
-			{ user: '9', name: 'userc', samples: 24 },
-			{ user: '10', name: 'userc', samples: 22 },
-		],
 		highest: {
-			user: '1',
-			name: 'usera',
-			samples: 42,
+			user: '99',
+			name: 'xnShiLong',
+			division: 'Science Team',
+			submissions: 1200,
 		},
 	});
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'reckoning2025',
+		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const res = await eventHandler({ data: {} }, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('Festival of Reckoning: Holiday Sample Donation Drive'));
-	assert.ok(json.data.content.includes('1. <@1>: 100 samples'));
-	assert.ok(json.data.content.includes('3. <@3>: 56 samples'));
-	assert.ok(json.data.content.includes('Total samples: 377'));
-	assert.ok(json.data.content.includes('Total submissions: 42'));
-	assert.ok(json.data.content.includes('Average samples: 8'));
-	assert.ok(json.data.content.includes('<:helldad:1316506358211805244> Highest result per submission: <@1> with 42 samples'));
-	assert.ok(json.data.content.includes('Use /submit to contribute your personal sample count'));
+	assert.ok(json.data.content.includes('Holiday Payload Program 2025'));
+	assert.ok(json.data.content.includes(':first_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 stratagems'));
+	assert.ok(
+		json.data.content.includes(
+			'<:helldads_baby:1316435213559136316> — <:sd_logo:1395099109203116083> **S.N.A.C.K. Division**: 15,300 stratagems',
+		),
+	);
+	assert.ok(json.data.content.includes('Total: 120,400'));
+	assert.ok(json.data.content.includes('Total submissions: 240'));
+	assert.ok(json.data.content.includes('Average per submissions: 501'));
+	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per submission: <@99> with 1,200'));
+	assert.ok(json.data.content.includes('**Time left**:'));
+	assert.ok(json.data.content.includes('Use `/submit` to contribute your stratagems used count'));
 });

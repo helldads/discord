@@ -1,19 +1,74 @@
 import { formatNumber } from '../lib/format.js';
 
-const EVENT_KEY = 'reckoning2025';
-const MAX_SUBMISSION = 100;
-const EVENT_COLUMN = 'event_rec25_samples';
+const EVENT_KEY = 'hpp25';
+const MAX_SUBMISSION = 500;
+
+const DIVISIONS = {
+	diaper: {
+		column: 'event_diaper_count',
+		display: 'Diaper Division',
+	},
+	baldzerkers: {
+		column: 'event_baldzerkers_count',
+		display: 'Baldzerkers',
+	},
+	science: {
+		column: 'event_science_count',
+		display: 'Science Team',
+	},
+	crayon: {
+		column: 'event_crayon_count',
+		display: 'Crayon Commandos',
+	},
+	snack: {
+		column: 'event_snack_count',
+		display: 'S.N.A.C.K. Division',
+	},
+};
 
 export const command = {
 	name: 'submit',
-	description: 'Submit how many samples you personally extracted.',
+	description: 'Submit all stratagems used per mission for your faction.',
 	options: [
 		{
-			name: 'samples',
-			description: 'How many samples did you personally extract in your last mission?',
+			name: 'baldzerkers',
+			description: 'Stratagems used by the Baldzerkers division',
 			type: 4, // INTEGER
-			required: true,
+			required: false,
 			min_value: 1,
+			max_value: MAX_SUBMISSION,
+		},
+		{
+			name: 'crayon',
+			description: 'Stratagems used by the Crayon Commandos division',
+			type: 4,
+			required: false,
+			min_value: 1,
+			max_value: MAX_SUBMISSION,
+		},
+		{
+			name: 'diaper',
+			description: 'Stratagems used by the Diaper Division',
+			type: 4,
+			required: false,
+			min_value: 1,
+			max_value: MAX_SUBMISSION,
+		},
+		{
+			name: 'science',
+			description: 'Stratagems used by the Science Team division',
+			type: 4,
+			required: false,
+			min_value: 1,
+			max_value: MAX_SUBMISSION,
+		},
+		{
+			name: 'snack',
+			description: 'Stratagems used by the S.N.A.C.K. Division',
+			type: 4,
+			required: false,
+			min_value: 1,
+			max_value: MAX_SUBMISSION,
 		},
 	],
 };
@@ -21,28 +76,35 @@ export const command = {
 function parseSubmission(options) {
 	const provided = Object.entries(options).filter(([, value]) => value !== undefined && value !== null);
 
-	const [optionKey, samplesRaw] = provided[0];
-	if (optionKey !== 'samples') {
-		return { error: 'Unknown submission field.' };
+	if (provided.length === 0) {
+		return { error: 'Please submit stratagems used for your division.' };
 	}
 
-	const samples = Number(samplesRaw);
-	if (!Number.isFinite(samples) || Number.isNaN(samples)) {
-		return { error: 'Invalid sample count. Provide a positive number (max 50).' };
-	}
-
-	if (samples <= 0) {
-		return { error: 'Sample count must be greater than zero.' };
-	}
-
-	if (samples > MAX_SUBMISSION) {
+	if (provided.length > 1) {
 		return {
-			error:
-				'Sample count exceptionally high. Please provide a screenshot for moderators so they can verify your results and add them manually.',
+			error: 'Only one division can be submitted at a time. Please submit separately.',
 		};
 	}
 
-	return { samples };
+	const [divisionKey, stratagems] = provided[0];
+	const division = DIVISIONS[divisionKey];
+	if (!division) {
+		return { error: 'Unknown division selected.' };
+	}
+
+	const count = Number(stratagems);
+	if (!Number.isFinite(count) || Number.isNaN(count)) {
+		return { error: 'Invalid stratagem count. Provide a positive number (max 500).' };
+	}
+
+	if (count >= MAX_SUBMISSION) {
+		return {
+			error:
+				'Submission count exceptionally high, congratulations! Please submit a screenshot to the mods first, so they can verify your results and add them manually.',
+		};
+	}
+
+	return { division, stratagems };
 }
 
 function parseOptions(interaction) {
@@ -54,7 +116,7 @@ function parseOptions(interaction) {
 }
 
 async function countRecentSubmissions(db, eventKey, user) {
-	const date = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+	const date = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 	const res = await db
 		.prepare('SELECT COUNT(*) AS cnt FROM submissions WHERE event_key = ? AND user = ? AND date >= ?')
 		.bind(eventKey, user, date)
@@ -92,7 +154,7 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const options = parseOptions(interaction);
-	const { samples, error } = parseSubmission(options);
+	const { division, stratagems, error } = parseSubmission(options);
 	if (error) {
 		return Response.json({
 			type: 4,
@@ -103,8 +165,6 @@ export async function handler(interaction, env, ctx) {
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
-	/*
-	// Temporarily disabled to save cpu time
 	try {
 		const count = await countRecentSubmissions(env.STATISTICS_DB, eventKey, userId);
 		if (count >= 3) {
@@ -119,11 +179,10 @@ export async function handler(interaction, env, ctx) {
 	} catch (err) {
 		console.error('Error checking submission rate limit', err);
 	}
-	*/
 
 	const now = new Date().toISOString();
-	const columns = ['user', 'name', 'date', 'event_key', EVENT_COLUMN];
-	const values = [userId, username, now, eventKey, samples];
+	const columns = ['user', 'name', 'date', 'event_key', division.column];
+	const values = [userId, username, now, eventKey, stratagems];
 
 	try {
 		const placeholders = columns.map(() => '?').join(', ');
@@ -140,12 +199,12 @@ export async function handler(interaction, env, ctx) {
 
 	let totals = 0;
 	try {
-		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId, EVENT_COLUMN);
+		totals = await getUserTotals(env.STATISTICS_DB, eventKey, userId, division.column);
 	} catch (err) {
 		console.error('Error reading user totals', err);
 	}
 
-	const message = `<@${userId}> submitted **${formatNumber(samples)} samples** . Thank you for your support!\nTotal contribution: ${formatNumber(totals)}`;
+	const message = `<@${userId}> reported **${formatNumber(stratagems)} stratagems used** for **${division.display}**. Thank you for your support!\nTotal contribution: ${formatNumber(totals)}`;
 
 	return Response.json({
 		type: 4,
