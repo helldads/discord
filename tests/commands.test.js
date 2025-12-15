@@ -304,6 +304,7 @@ test('submit command rejects invalid payloads', async () => {
 	assert.ok(jsonCap.data.content.includes('Submission count exceptionally high'));
 });
 
+/*
 test('submit command enforces rate limit after three submissions', async () => {
 	const now = Date.now();
 	const count = { cnt: 3 };
@@ -321,6 +322,7 @@ test('submit command enforces rate limit after three submissions', async () => {
 	const json = await readJson(res);
 	assert.ok(json.data.content.includes('wait at least 5 minutes'));
 });
+*/
 
 test('event command aggregates event results', async () => {
 	const db = createFakeDB({

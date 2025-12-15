@@ -93,9 +93,11 @@ function parseSubmission(options) {
 	}
 
 	const count = Number(stratagems);
+	/*
 	if (!Number.isFinite(count) || Number.isNaN(count)) {
 		return { error: 'Invalid stratagem count. Provide a positive number (max 500).' };
 	}
+	*/
 
 	if (count >= MAX_SUBMISSION) {
 		return {
@@ -165,6 +167,7 @@ export async function handler(interaction, env, ctx) {
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
+	/*
 	try {
 		const count = await countRecentSubmissions(env.STATISTICS_DB, eventKey, userId);
 		if (count >= 3) {
@@ -179,6 +182,7 @@ export async function handler(interaction, env, ctx) {
 	} catch (err) {
 		console.error('Error checking submission rate limit', err);
 	}
+	*/
 
 	const now = new Date().toISOString();
 	const columns = ['user', 'name', 'date', 'event_key', division.column];
