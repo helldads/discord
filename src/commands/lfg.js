@@ -30,6 +30,10 @@ const maxPlayers = [
 	{ name: '4', value: '4' },
 ];
 
+const bannedSlugs = ['ass', 'cum', 'dic', 'fag', 'fuk', 'fux', 'gay', 'hoe', 'kkk', 'nig', 'sex', 'tit', 'xxx', '420', '666', '888'];
+
+const SLUG_REGEX = /^[a-zA-Z0-9]{3}$/;
+
 export const command = {
 	name: 'lfg',
 	description: 'Create a temporary squad voice channel',
@@ -50,14 +54,14 @@ export const command = {
 		},
 		{
 			name: 'difficulty',
-			description: 'Requested difficulty',
+			description: 'Preferred difficulty',
 			type: 3,
 			required: false,
 			choices: difficulties,
 		},
 		{
 			name: 'friendcode',
-			description: 'Your Helldivers friend code without # (format: 1234-5678)',
+			description: 'Your Helldivers friend code (format: #1234-5678)',
 			type: 3,
 			required: false,
 		},
@@ -74,6 +78,18 @@ export const command = {
 			required: false,
 			choices: maxPlayers,
 		},
+		{
+			name: 'slug',
+			description: '3-letter acronym used to identify the channel, default is "lfg"',
+			type: 3,
+			required: false,
+		},
+		{
+			name: 'ping',
+			description: 'Whether to post the confirmation message in this channel and notify the @LFG subscribers (default: on)',
+			type: 5,
+			required: false,
+		},
 	],
 };
 
@@ -88,7 +104,8 @@ const formatSummary = (params) => {
 	];
 
 	if (params.friendcode) {
-		lines.push(`**Friend Code:** #${params.friendcode}`);
+		const friendcode = params.friendcode.replace(/\D/g, '');
+		lines.push(`**Friend Code:** #${friendcode.slice(0, 4)}-${friendcode.slice(4)}`);
 	}
 	if (params.comment) {
 		lines.push(`**Note:** ${params.comment}`);
@@ -103,10 +120,21 @@ const slugify = (text) =>
 		.replace(/[^a-z0-9-]/g, '')
 		.slice(0, 32);
 
+export const buildSummary = formatSummary;
+
+export const buildConfirmationMessage = (lfgId, userId, channelId, summary) =>
+	`<@&${lfgId}>: <@${userId}> is looking for a group in voice channel: <#${channelId}>\n${summary}`;
+
+export const buildChannelName = ({ slug, difficulty, faction, activity }) =>
+	slugify([slug, difficulty, faction, activity].filter((n) => n).join('-'));
+
+export const isValidSlug = (slug) => SLUG_REGEX.test(slug) && !bannedSlugs.includes(slug);
+
 export async function handler(interaction, env, ctx) {
 	const token = env.DISCORD_TOKEN;
 	const guildId = env.DISCORD_GUILD_ID;
 	const categoryId = env.DISCORD_LFG_CATEGORY_ID;
+	const lfgId = env.DISCORD_LFG_ROLE_ID;
 
 	const options = interaction.data.options ?? [];
 	const getOptionValue = (name) => options.find((o) => o.name === name)?.value;
@@ -117,12 +145,25 @@ export async function handler(interaction, env, ctx) {
 	const friendcode = getOptionValue('friendcode');
 	const comment = getOptionValue('comment');
 	const maxPlayersOption = getOptionValue('max_players') || 'unlimited';
+	const slug = (getOptionValue('slug') || 'lfg').toLowerCase();
+	const ping = getOptionValue('ping');
+	const shouldPing = ping === undefined ? true : Boolean(ping);
 
-	if (friendcode && !/^\d{4}-\d{4}$/.test(friendcode)) {
+	if (friendcode && !/^#?\d{4}-?\d{4}$/.test(friendcode)) {
 		return Response.json({
 			type: 4,
 			data: {
-				content: 'Invalid friend code format. Please use `1234-5678` (without #).',
+				content: 'Invalid friend code format. Please use `1234-5678`.',
+				flags: 64,
+			},
+		});
+	}
+
+	if (!isValidSlug(slug)) {
+		return Response.json({
+			type: 4,
+			data: {
+				content: 'Invalid channel slug. Please use a 3-character alphanumeric value. Some acronyms are blocked to avoid profanity.',
 				flags: 64,
 			},
 		});
@@ -132,7 +173,7 @@ export async function handler(interaction, env, ctx) {
 	const maxPlayersLabel = choiceName(maxPlayers, maxPlayersOption, 'Unlimited');
 
 	const userId = interaction.member?.user?.id;
-	const channelName = slugify(['lfg', difficulty, faction, activity].filter((n) => n).join('-'));
+	const channelName = buildChannelName({ slug, difficulty, faction, activity });
 
 	const channelPayload = {
 		name: channelName,
@@ -156,11 +197,11 @@ export async function handler(interaction, env, ctx) {
 		const channelData = await channelRes.json();
 
 		if (!channelRes.ok) {
-			console.error('Failed to create lfg channel', channelData);
+			console.error('Failed to create voice channel', channelData);
 			return Response.json({
 				type: 4,
 				data: {
-					content: 'Failed to create a squad channel. Please try again.',
+					content: 'Failed to create a voice channel. Please try again later.',
 					flags: 64,
 				},
 			});
@@ -175,11 +216,26 @@ export async function handler(interaction, env, ctx) {
 			comment,
 		});
 
+		const confirmationMessage = buildConfirmationMessage(lfgId, userId, channelData.id, summary);
+
+		await fetch(`https://discord.com/api/v10/channels/${channelData.id}/messages`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bot ${token}`,
+			},
+			body: JSON.stringify({
+				content: summary,
+				allowed_mentions: { users: [userId] },
+			}),
+		});
+
 		return Response.json({
 			type: 4,
 			data: {
-				content: `<@${userId}> is looking for a group (@LFG) in squad voice channel: <#${channelData.id}>\n${summary}`,
-				allowed_mentions: { users: [userId] },
+				content: shouldPing ? confirmationMessage : `Your channel has been created: <#${channelData.id}>`,
+				allowed_mentions: shouldPing ? { users: [userId] } : undefined,
+				flags: shouldPing ? undefined : 64,
 			},
 		});
 	} catch (err) {
