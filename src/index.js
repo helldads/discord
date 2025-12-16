@@ -1,30 +1,33 @@
 // discord verification
 import { verifyKey } from './lib/discord.js';
 
-// slash commands
-import * as stats from './commands/stats.js';
-import * as quote from './commands/quote.js';
-import * as modHelp from './commands/modhelp.js';
-import * as help from './commands/help.js';
-import * as submit from './commands/submit.js';
-import * as update from './commands/update.js';
-import * as highscores from './commands/highscores.js';
-import * as event from './commands/event.js';
-
 // scheduled events
 import * as dailyQuote from './events/daily-quote.js';
 import * as weeklyStats from './events/weekly-stats.js';
 
-const commandHandlers = {
-	[stats.command.name]: stats.handler,
-	[quote.command.name]: quote.handler,
-	[modHelp.command.name]: modHelp.handler,
-	[help.command.name]: help.handler,
-	[submit.command.name]: submit.handler,
-	[update.command.name]: update.handler,
-	[highscores.command.name]: highscores.handler,
-	[event.command.name]: event.handler,
+const commandImporters = {
+	stats: () => import('./commands/stats.js'),
+	quote: () => import('./commands/quote.js'),
+	modhelp: () => import('./commands/modhelp.js'),
+	help: () => import('./commands/help.js'),
+	submit: () => import('./commands/submit.js'),
+	update: () => import('./commands/update.js'),
+	highscores: () => import('./commands/highscores.js'),
+	event: () => import('./commands/event.js'),
 };
+
+async function getCommandHandler(name) {
+	const importer = commandImporters[name];
+	if (!importer) return null;
+
+	try {
+		const module = await importer();
+		return module.handler;
+	} catch (err) {
+		console.error(`Failed to load handler for command "${name}"`, err);
+		return null;
+	}
+}
 
 export default {
 	// FETCH http request handler
@@ -54,7 +57,7 @@ export default {
 		// Handle slash commands
 		if (interaction.type === 2) {
 			const name = interaction.data.name;
-			const handler = commandHandlers[name];
+			const handler = await getCommandHandler(name);
 			if (handler) {
 				return await handler(interaction, env, ctx);
 			} else {
