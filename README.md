@@ -8,6 +8,7 @@ The bot currently implements the following slash commands:
 
 - `/help` – Display an overview of commands and useful channels.
 - `/highscores` – Display highscores of all HellDads who shared their results. Use `user` to view a specific player's stats.
+- `/lfg` – Create an on-demand squad voice channel with matchmaking details.
 - `/modhelp` – Open a private support channel and ping the mods.
 - `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
@@ -40,6 +41,7 @@ The following environment variables must be provided:
 - `DISCORD_PUBLIC_KEY` – Public key for verifying requests.
 - `DISCORD_MAIN_CHANNEL_ID` – Channel ID where scheduled updates are posted.
 - `DISCORD_SUPPORT_CATEGORY_ID` – ID of the category where support channels or threads will be created.
+- `DISCORD_LFG_CATEGORY_ID` – ID of the category where LFG voice channels should be created.
 - `DISCORD_TOKEN` – Bot token used for authentication.
 - `HELLDADS_STATS_URL` – URL to the JSON with community stats.
 

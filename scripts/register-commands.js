@@ -5,6 +5,7 @@ import * as stats from '../src/commands/stats.js';
 import * as quote from '../src/commands/quote.js';
 import * as modHelp from '../src/commands/modhelp.js';
 import * as help from '../src/commands/help.js';
+import * as lfg from '../src/commands/lfg.js';
 import * as submit from '../src/commands/submit.js';
 import * as update from '../src/commands/update.js';
 import * as highscores from '../src/commands/highscores.js';
@@ -15,6 +16,7 @@ const commands = [
 	quote.command,
 	modHelp.command,
 	help.command,
+	lfg.command,
 	submit.command,
 	update.command,
 	highscores.command,

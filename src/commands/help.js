@@ -20,6 +20,7 @@ export async function handler(interaction, env, ctx) {
 		'',
 		'This bot also supports helpful commands:',
 		'• `/modhelp` – Open a private support channel with the mods.',
+		'• `/lfg` – Create an on-demand squad voice channel with matchmaking details.',
 		'• `/quote` – Get a democratic Helldivers quote.',
 		'• `/stats` – Display community statistics.',
 		'• `/event` – Display the current event and statistics.',

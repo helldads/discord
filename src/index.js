@@ -6,6 +6,7 @@ const commandImporters = {
 	quote: () => import('./commands/quote.js'),
 	modhelp: () => import('./commands/modhelp.js'),
 	help: () => import('./commands/help.js'),
+	lfg: () => import('./commands/lfg.js'),
 	submit: () => import('./commands/submit.js'),
 	update: () => import('./commands/update.js'),
 	highscores: () => import('./commands/highscores.js'),

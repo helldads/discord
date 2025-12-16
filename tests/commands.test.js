@@ -14,6 +14,7 @@ import { handler as modhelpHandler } from '../src/commands/modhelp.js';
 import { handler as submitHandler } from '../src/commands/submit.js';
 import { handler as updateHandler } from '../src/commands/update.js';
 import { handler as eventHandler } from '../src/commands/event.js';
+import { handler as lfgHandler } from '../src/commands/lfg.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -212,6 +213,47 @@ test('modhelp command triggers fetch calls', async () => {
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
+});
+
+test('lfg command creates a squad voice channel', async () => {
+	const calls = [];
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = async (url, options) => {
+		calls.push({ url, options });
+		return new Response(JSON.stringify({ id: '123' }), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' },
+		});
+	};
+	const env = {
+		DISCORD_TOKEN: 't',
+		DISCORD_GUILD_ID: 'g',
+		DISCORD_LFG_CATEGORY_ID: 'cat',
+	};
+	try {
+		const interaction = {
+			data: { options: [{ name: 'activity', value: 'fun' }] },
+			member: { user: { id: '1', username: 'Tester' } },
+			channel_id: '2',
+		};
+		const res = await lfgHandler(interaction, env, {});
+		const json = await readJson(res);
+		console.log(json.data.content);
+		assert.ok(json.data.content.includes('<#123>'));
+		assert.ok(json.data.content.includes('<@1>'));
+		assert.ok(calls.length === 1);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
+test('lfg command rejects invalid friend code', async () => {
+	const env = { DISCORD_TOKEN: 't', DISCORD_GUILD_ID: 'g' };
+	const interaction = { data: { options: [{ name: 'friendcode', value: '#1234-12' }] }, member: { user: { id: '1' } } };
+	const res = await lfgHandler(interaction, env, {});
+	const json = await readJson(res);
+	assert.ok(json.data.content.includes('Invalid friend code format'));
+	assert.equal(json.data.flags, 64);
 });
 
 test('submit command records stratagems and returns totals', async () => {
