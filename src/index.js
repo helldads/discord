@@ -1,10 +1,6 @@
 // discord verification
 import { verifyKey } from './lib/discord.js';
 
-// scheduled events
-import * as dailyQuote from './events/daily-quote.js';
-import * as weeklyStats from './events/weekly-stats.js';
-
 const commandImporters = {
 	stats: () => import('./commands/stats.js'),
 	quote: () => import('./commands/quote.js'),
@@ -14,6 +10,11 @@ const commandImporters = {
 	update: () => import('./commands/update.js'),
 	highscores: () => import('./commands/highscores.js'),
 	event: () => import('./commands/event.js'),
+};
+
+const scheduledImporters = {
+	'0 17 * * *': () => import('./events/daily-quote.js'),
+	'0 6 * * 2': () => import('./events/weekly-stats.js'),
 };
 
 async function getCommandHandler(name) {
@@ -26,6 +27,25 @@ async function getCommandHandler(name) {
 	} catch (err) {
 		console.error(`Failed to load handler for command "${name}"`, err);
 		return null;
+	}
+}
+
+async function handleScheduledEvent(cron, event, env, ctx) {
+	const importer = scheduledImporters[cron];
+	if (!importer) return false;
+
+	try {
+		const module = await importer();
+		if (typeof module.handler !== 'function') {
+			console.error(`No handler exported for cron "${cron}"`);
+			return false;
+		}
+
+		ctx.waitUntil(module.handler(event, env, ctx));
+		return true;
+	} catch (err) {
+		console.error(`Failed to load handler for cron "${cron}"`, err);
+		return false;
 	}
 }
 
@@ -73,15 +93,6 @@ export default {
 
 	// SCHEDULED cron request handler
 	async scheduled(event, env, ctx) {
-		switch (event.cron) {
-			// daily quote-of-the-day in the Afternoon
-			case '0 17 * * *':
-				ctx.waitUntil(dailyQuote.handler(event, env, ctx));
-				break;
-			// weekly community stats on Monday Morning
-			case '0 6 * * 2':
-				ctx.waitUntil(weeklyStats.handler(event, env, ctx));
-				break;
-		}
+		await handleScheduledEvent(event.cron, event, env, ctx);
 	},
 };
