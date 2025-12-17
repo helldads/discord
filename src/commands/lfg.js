@@ -118,15 +118,16 @@ const slugify = (text) =>
 	text
 		.toLowerCase()
 		.replace(/[^a-z0-9-]/g, '')
-		.slice(0, 32);
+		.slice(0, 32)
+		.replace(/-$/, '');
 
 export const buildSummary = formatSummary;
 
 export const buildConfirmationMessage = (lfgId, userId, channelId, summary) =>
 	`<@&${lfgId}>: <@${userId}> is looking for a group in voice channel: <#${channelId}>\n${summary}`;
 
-export const buildChannelName = ({ slug, difficulty, faction, activity }) =>
-	slugify([slug, difficulty, faction, activity].filter((n) => n).join('-'));
+export const buildChannelName = ({ slug, difficulty, faction, activity, username }) =>
+	slugify([slug, difficulty, faction, activity, username].filter((n) => n).join('-'));
 
 export const isValidSlug = (slug) => SLUG_REGEX.test(slug) && !bannedSlugs.includes(slug);
 
@@ -173,7 +174,8 @@ export async function handler(interaction, env, ctx) {
 	const maxPlayersLabel = choiceName(maxPlayers, maxPlayersOption, 'Unlimited');
 
 	const userId = interaction.member?.user?.id;
-	const channelName = buildChannelName({ slug, difficulty, faction, activity });
+	const username = interaction.member.user.username || 'squad';
+	const channelName = buildChannelName({ slug, difficulty, faction, activity, username });
 
 	const channelPayload = {
 		name: channelName,

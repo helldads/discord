@@ -310,8 +310,9 @@ test('lfg command validates slug', async () => {
 });
 
 test('lfg helper builders construct expected values', () => {
-	const name = buildChannelName({ slug: 'lfg', difficulty: 'high', faction: 'any', activity: 'fun' });
+	const name = buildChannelName({ slug: 'lfg', difficulty: 'high', faction: 'any', activity: 'fun', username: 'squad' });
 	assert.ok(name.startsWith('lfg-high'));
+	assert.ok(name.endsWith('squad'));
 
 	const message = buildConfirmationMessage('0', '1', '123', 'Summary');
 
