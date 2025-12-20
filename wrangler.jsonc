@@ -30,6 +30,7 @@
 		"crons": [
 			"0 17 * * *", // daily quote
 			"0 6 * * 2", // weekly stats on Monday
+			"*/5 * * * *", // cleanup stale LFG voice channels
 		],
 	},
 

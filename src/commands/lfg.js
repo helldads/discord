@@ -1,3 +1,5 @@
+import { getTimestampFromSnowflake } from '../lib/snowflake.js';
+
 const factions = [
 	{ name: 'Any', value: 'any' },
 	{ name: 'Automatons', value: 'automatons' },
@@ -28,6 +30,14 @@ const maxPlayers = [
 	{ name: '2', value: '2' },
 	{ name: '3', value: '3' },
 	{ name: '4', value: '4' },
+];
+
+const expiries = [
+	{ name: '3 hours', value: 3 },
+	{ name: '6 hours', value: 6 },
+	{ name: '12 hours', value: 12 },
+	{ name: '24 hours', value: 24 },
+	{ name: 'never', value: 0 },
 ];
 
 const bannedSlugs = ['ass', 'cum', 'dic', 'fag', 'fuk', 'fux', 'gay', 'hoe', 'kkk', 'nig', 'sex', 'tit', 'xxx', '420', '666', '888'];
@@ -85,8 +95,15 @@ export const command = {
 			required: false,
 		},
 		{
+			name: 'expiry',
+			description: 'After how many hours should the channel be automatically deleted (default: 3h)',
+			type: 4,
+			required: false,
+			choices: expiries,
+		},
+		{
 			name: 'ping',
-			description: 'Whether to post the confirmation message in this channel and notify the @LFG subscribers (default: on)',
+			description: 'Post the confirmation message in this channel and notify all @LFG subscribers (default: on)',
 			type: 5,
 			required: false,
 		},
@@ -96,11 +113,13 @@ export const command = {
 const choiceName = (choices, value, fallback) => choices.find((c) => c.value === value)?.name || fallback;
 
 const formatSummary = (params) => {
+	const expireTime = params.deletionDate ? ` (<t:${Math.floor(params.deletionDate.getTime() / 1000)}:R>)` : '';
 	const lines = [
 		`**Faction:** ${choiceName(factions, params.faction, 'Any')}`,
 		`**Activity:** ${choiceName(activities, params.activity, 'Any')}`,
 		`**Difficulty:** ${choiceName(difficulties, params.difficulty, 'Any')}`,
 		`**Max Players:** ${params.maxPlayersLabel}`,
+		`**Expires in:** ${choiceName(expiries, params.expiryHours, 'never')}${expireTime}`,
 	];
 
 	if (params.friendcode) {
@@ -126,8 +145,8 @@ export const buildSummary = formatSummary;
 export const buildConfirmationMessage = (lfgId, userId, channelId, summary) =>
 	`<@&${lfgId}>: <@${userId}> is looking for a group in voice channel: <#${channelId}>\n${summary}`;
 
-export const buildChannelName = ({ slug, difficulty, faction, activity, username }) =>
-	slugify([slug, difficulty, faction, activity, username].filter((n) => n).join('-'));
+export const buildChannelName = ({ slug, expiryHours, difficulty, faction, activity, username }) =>
+	slugify([slug, expiryHours ? `${expiryHours}h` : null, difficulty, faction, activity, username].filter((n) => n).join('-'));
 
 export const isValidSlug = (slug) => SLUG_REGEX.test(slug) && !bannedSlugs.includes(slug);
 
@@ -147,6 +166,7 @@ export async function handler(interaction, env, ctx) {
 	const comment = getOptionValue('comment');
 	const maxPlayersOption = getOptionValue('max_players') || 'unlimited';
 	const slug = (getOptionValue('slug') || 'lfg').toLowerCase();
+	const expiryHours = Number(getOptionValue('expiry') ?? 3);
 	const ping = getOptionValue('ping');
 	const shouldPing = ping === undefined ? true : Boolean(ping);
 
@@ -175,12 +195,13 @@ export async function handler(interaction, env, ctx) {
 
 	const userId = interaction.member?.user?.id;
 	const username = interaction.member.user.username || 'squad';
-	const channelName = buildChannelName({ slug, difficulty, faction, activity, username });
+	const channelName = buildChannelName({ slug, expiryHours, difficulty, faction, activity, username });
 
 	const channelPayload = {
 		name: channelName,
 		type: 2, // GUILD_VOICE
 		user_limit: Number.isNaN(userLimit) ? 0 : userLimit,
+		position: 0,
 	};
 
 	if (categoryId) {
@@ -209,12 +230,17 @@ export async function handler(interaction, env, ctx) {
 			});
 		}
 
+		const creationTimestamp = getTimestampFromSnowflake(channelData.id);
+		const deletionDate = expiryHours > 0 ? new Date(creationTimestamp + expiryHours * 60 * 60 * 1000) : null;
+
 		const summary = formatSummary({
 			faction,
 			activity,
 			difficulty,
 			maxPlayersLabel,
 			friendcode,
+			expiryHours,
+			deletionDate,
 			comment,
 		});
 

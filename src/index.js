@@ -16,6 +16,7 @@ const commandImporters = {
 const scheduledImporters = {
 	'0 17 * * *': () => import('./events/daily-quote.js'),
 	'0 6 * * 2': () => import('./events/weekly-stats.js'),
+	'*/5 * * * *': () => import('./events/cleanup-lfg.js'),
 };
 
 async function getCommandHandler(name) {

@@ -15,9 +15,14 @@ import { handler as submitHandler } from '../src/commands/submit.js';
 import { handler as updateHandler } from '../src/commands/update.js';
 import { handler as eventHandler } from '../src/commands/event.js';
 import { buildChannelName, buildConfirmationMessage, handler as lfgHandler, isValidSlug } from '../src/commands/lfg.js';
+import { getTimestampFromSnowflake } from '../src/lib/snowflake.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const DISCORD_EPOCH = 1420070400000n;
+
+const buildSnowflake = (dateMs) => ((BigInt(dateMs) - DISCORD_EPOCH) << 22n).toString();
 
 // Helper to read JSON response
 async function readJson(res) {
@@ -218,9 +223,10 @@ test('modhelp command triggers fetch calls', async () => {
 test('lfg command creates a squad voice channel', async () => {
 	const calls = [];
 	const originalFetch = globalThis.fetch;
+	const snowflake = buildSnowflake(Date.now());
 	globalThis.fetch = async (url, options) => {
 		calls.push({ url, options });
-		return new Response(JSON.stringify({ id: '123' }), {
+		return new Response(JSON.stringify({ id: snowflake }), {
 			status: 200,
 			headers: { 'Content-Type': 'application/json' },
 		});
@@ -245,12 +251,12 @@ test('lfg command creates a squad voice channel', async () => {
 		};
 		const res = await lfgHandler(interaction, env, {});
 		const json = await readJson(res);
-		assert.ok(json.data.content.includes('<#123>'));
+		assert.ok(json.data.content.includes(`<#${snowflake}>`));
 		assert.ok(json.data.content.includes('<@1>'));
 		assert.equal(calls.length, 2);
 
 		const createPayload = JSON.parse(calls[0].options.body);
-		assert.equal(createPayload.name.startsWith('tst'), true);
+		assert.equal(createPayload.name.startsWith('tst-3h'), true);
 
 		const welcomePayload = JSON.parse(calls[1].options.body);
 		assert.ok(welcomePayload.content.includes('Any'));
@@ -258,6 +264,11 @@ test('lfg command creates a squad voice channel', async () => {
 		assert.ok(welcomePayload.content.includes('High'));
 		assert.ok(welcomePayload.content.includes('Unlimited'));
 		assert.deepEqual(welcomePayload.allowed_mentions.users, ['1']);
+
+		const expectedDeletion = Math.floor((getTimestampFromSnowflake(snowflake) + 3 * 60 * 60 * 1000) / 1000);
+
+		assert.ok(json.data.content.includes('**Expires in:** 3 hours'));
+		assert.ok(json.data.content.includes(`<t:${expectedDeletion}:R>`));
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
@@ -266,9 +277,10 @@ test('lfg command creates a squad voice channel', async () => {
 test('lfg command supports no-ping mode', async () => {
 	const calls = [];
 	const originalFetch = globalThis.fetch;
+	const snowflake = buildSnowflake(Date.now());
 	globalThis.fetch = async (url, options) => {
 		calls.push({ url, options });
-		return new Response(JSON.stringify({ id: '123' }), {
+		return new Response(JSON.stringify({ id: snowflake }), {
 			status: 200,
 			headers: { 'Content-Type': 'application/json' },
 		});
@@ -291,6 +303,42 @@ test('lfg command supports no-ping mode', async () => {
 		assert.equal(calls.length, 2);
 		const confirmationPayload = JSON.parse(calls[1].options.body);
 		assert.ok(confirmationPayload.content.includes('Unlimited'));
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
+test('lfg command supports unlimited expiry and naming rules', async () => {
+	const calls = [];
+	const originalFetch = globalThis.fetch;
+	const snowflake = buildSnowflake(Date.now());
+	globalThis.fetch = async (url, options) => {
+		calls.push({ url, options });
+		return new Response(JSON.stringify({ id: snowflake }), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' },
+		});
+	};
+	const env = {
+		DISCORD_TOKEN: 't',
+		DISCORD_GUILD_ID: 'g',
+		DISCORD_LFG_CATEGORY_ID: 'cat',
+		DISCORD_LFG_ROLE_ID: '0',
+	};
+	try {
+		const interaction = {
+			data: { options: [{ name: 'expiry', value: 0 }] },
+			member: { user: { id: '1', username: 'Tester' } },
+			channel_id: '2',
+		};
+		const res = await lfgHandler(interaction, env, {});
+		const json = await readJson(res);
+
+		assert.ok(json.data.content.includes('**Expires in:** never'));
+
+		const createPayload = JSON.parse(calls[0].options.body);
+		assert.equal(createPayload.name.startsWith('lfg-'), true);
+		assert.equal(createPayload.name.includes('-0h-'), false);
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
