@@ -1,7 +1,7 @@
 import { formatNumber } from '../lib/format.js';
 
 const EVENT_KEY = 'hpp25';
-const MAX_SUBMISSION = 500;
+const MAX_SUBMISSION = 1000;
 
 const DIVISIONS = {
 	diaper: {
