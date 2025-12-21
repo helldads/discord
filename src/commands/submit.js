@@ -28,7 +28,7 @@ const DIVISIONS = {
 
 export const command = {
 	name: 'submit',
-	description: 'Submit all stratagems used per mission for your faction, or call without options to view your submissions.',
+	description: 'Submit all stratagems used per mission for your faction, or without options for your stats.',
 	options: [
 		{
 			name: 'baldzerkers',
