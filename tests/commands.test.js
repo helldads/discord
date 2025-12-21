@@ -36,6 +36,7 @@ function createFakeDB(state = {}) {
 		userTotals: {},
 		totals: {},
 		highest: null,
+		submissions: [],
 	};
 	const data = { ...defaults, ...state };
 	return {
@@ -70,6 +71,13 @@ function createFakeDB(state = {}) {
 					}
 					if (sql.includes('UNION ALL') && sql.includes('ORDER BY submissions DESC LIMIT 1')) {
 						return { results: data.highest ? [data.highest] : [] };
+					}
+					if (
+						sql.includes('event_baldzerkers_count') &&
+						sql.includes('event_crayon_count') &&
+						sql.includes('FROM submissions WHERE event_key = ? AND user = ?')
+					) {
+						return { results: data.submissions };
 					}
 					return { results: [] };
 				},
@@ -429,7 +437,6 @@ test('submit command rejects invalid payloads', async () => {
 		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
-	const noDivision = { data: { options: [] }, member: { user: { id: '1' } } };
 	const multipleDivisions = {
 		data: {
 			options: [
@@ -445,10 +452,6 @@ test('submit command rejects invalid payloads', async () => {
 	};
 	//const invalidCount = { data: { options: [{ name: 'science', value: 0 }] }, member: { user: { id: '1' } } };
 	const overCap = { data: { options: [{ name: 'science', value: 3000 }] }, member: { user: { id: '1' } } };
-
-	const resNoDivision = await submitHandler(noDivision, env, {});
-	const jsonNoDivision = await readJson(resNoDivision);
-	assert.ok(jsonNoDivision.data.content.includes('Please submit stratagems used for your division.'));
 
 	const resMulti = await submitHandler(multipleDivisions, env, {});
 	const jsonMulti = await readJson(resMulti);
@@ -467,6 +470,31 @@ test('submit command rejects invalid payloads', async () => {
 	const resCap = await submitHandler(overCap, env, {});
 	const jsonCap = await readJson(resCap);
 	assert.ok(jsonCap.data.content.includes('Submission count exceptionally high'));
+});
+
+test('submit command lists submissions when no options are provided', async () => {
+	const env = {
+		STATISTICS_DB: createFakeDB({
+			submissions: [
+				{ date: '2025-01-01T00:00:00.000Z', event_science_count: 100 },
+				{ date: '2025-01-02T00:00:00.000Z', event_diaper_count: 50 },
+			],
+		}),
+		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
+		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
+	};
+
+	const interaction = { data: { options: [] }, member: { user: { id: '1', username: 'Tester' } } };
+	const res = await submitHandler(interaction, env, {});
+	const json = await readJson(res);
+
+	assert.equal(json.data.flags, 64);
+	console.log(json.data.content);
+	assert.ok(json.data.content.includes('Science Team'));
+	assert.ok(json.data.content.includes('Diaper Division'));
+	assert.ok(json.data.content.includes('Totals'));
+	assert.ok(json.data.content.includes('Overall'));
+	assert.ok(json.data.content.includes(`<t:${Math.floor(new Date('2025-01-01T00:00:00.000Z').getTime() / 1000)}:d>`));
 });
 
 /*

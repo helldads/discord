@@ -28,7 +28,7 @@ const DIVISIONS = {
 
 export const command = {
 	name: 'submit',
-	description: 'Submit all stratagems used per mission for your faction.',
+	description: 'Submit all stratagems used per mission for your faction, or call without options to view your submissions.',
 	options: [
 		{
 			name: 'baldzerkers',
@@ -76,10 +76,6 @@ export const command = {
 function parseSubmission(options) {
 	const provided = Object.entries(options).filter(([, value]) => value !== undefined && value !== null);
 
-	if (provided.length === 0) {
-		return { error: 'Please submit stratagems used for your division.' };
-	}
-
 	if (provided.length > 1) {
 		return {
 			error: 'Only one division can be submitted at a time. Please submit separately.',
@@ -93,11 +89,6 @@ function parseSubmission(options) {
 	}
 
 	const count = Number(stratagems);
-	/*
-	if (!Number.isFinite(count) || Number.isNaN(count)) {
-		return { error: 'Invalid stratagem count. Provide a positive number (max 500).' };
-	}
-	*/
 
 	if (count >= MAX_SUBMISSION) {
 		return {
@@ -124,6 +115,55 @@ async function countRecentSubmissions(db, eventKey, user) {
 		.bind(eventKey, user, date)
 		.first();
 	return res ? Number(res.cnt) : 0;
+}
+
+async function getUserSubmissions(db, eventKey, userId) {
+	const res = await db
+		.prepare(
+			'SELECT date, event_diaper_count, event_baldzerkers_count, event_science_count, event_crayon_count, event_snack_count FROM submissions WHERE event_key = ? AND user = ?;',
+		)
+		.bind(eventKey, userId)
+		.all();
+	return res?.results ?? [];
+}
+
+function formatSubmissionSummary(rows) {
+	const submissions = [];
+	const totals = {};
+
+	for (const row of rows) {
+		for (const [key, division] of Object.entries(DIVISIONS)) {
+			const count = row[division.column];
+			if (count === undefined || count === null) continue;
+
+			const numericCount = Number(count);
+			if (!Number.isFinite(numericCount)) continue;
+
+			totals[key] = (totals[key] ?? 0) + numericCount;
+			const timestampSeconds = Math.floor(new Date(row.date).getTime() / 1000);
+			submissions.push(`<t:${timestampSeconds}:d> <t:${timestampSeconds}:t>: ${formatNumber(numericCount)} (${division.display})`);
+		}
+	}
+
+	if (submissions.length === 0) {
+		return 'You have no submissions for this event yet.';
+	}
+
+	const totalLines = Object.entries(totals).map(([key, total]) => {
+		const division = DIVISIONS[key];
+		return `• ${division.display}: ${formatNumber(total)}`;
+	});
+
+	const overall = Object.values(totals).reduce((sum, value) => sum + value, 0);
+
+	return [
+		'Here are your submissions for this event:',
+		...submissions,
+		'',
+		'Totals:',
+		...totalLines,
+		`Overall: ${formatNumber(overall)}`,
+	].join('\n');
 }
 
 async function getUserTotals(db, eventKey, userId, column) {
@@ -156,6 +196,27 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const options = parseOptions(interaction);
+	const provided = Object.values(options).filter((value) => value !== undefined && value !== null);
+	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
+
+	if (provided.length === 0) {
+		try {
+			const rows = await getUserSubmissions(env.STATISTICS_DB, eventKey, userId);
+			const summary = formatSubmissionSummary(rows);
+
+			return Response.json({
+				type: 4,
+				data: { content: summary, flags: 64 },
+			});
+		} catch (err) {
+			console.error('Error reading user submissions', err);
+			return Response.json({
+				type: 4,
+				data: { content: 'Failed to read your submissions.', flags: 64 },
+			});
+		}
+	}
+
 	const { division, stratagems, error } = parseSubmission(options);
 	if (error) {
 		return Response.json({
@@ -164,7 +225,6 @@ export async function handler(interaction, env, ctx) {
 		});
 	}
 
-	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
 	/*
