@@ -30,6 +30,8 @@ The bot currently implements the following slash commands:
    ([`src/events/daily-quote.js`](src/events/daily-quote.js)).
 2. Once per week it also posts community statistics into the main channel
    ([`src/events/weekly-stats.js`](src/events/weekly-stats.js)).
+3. Every few minutes a cleanup task is looking for expired lfg-voice channels
+   ([`src/events/cleanup-lfg.js`](src/events/cleanup-lfg.js)).
 
 ## Environment Variables
 
