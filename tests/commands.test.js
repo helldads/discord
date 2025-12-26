@@ -307,7 +307,7 @@ test('lfg command supports no-ping mode', async () => {
 		const res = await lfgHandler(interaction, env, {});
 		const json = await readJson(res);
 		assert.equal(json.data.flags, 64);
-		assert.ok(json.data.content.includes('Your channel has been created'));
+		assert.ok(json.data.content.includes('Your channel is ready'));
 		assert.equal(calls.length, 2);
 		const confirmationPayload = JSON.parse(calls[1].options.body);
 		assert.ok(confirmationPayload.content.includes('Unlimited'));
@@ -341,12 +341,50 @@ test('lfg command supports unlimited expiry and naming rules', async () => {
 		};
 		const res = await lfgHandler(interaction, env, {});
 		const json = await readJson(res);
-
-		assert.ok(json.data.content.includes('**Expires in:** never'));
+		assert.ok(!json.data.content.includes('**Expires in:**'));
 
 		const createPayload = JSON.parse(calls[0].options.body);
 		assert.equal(createPayload.name.startsWith('lfg-'), true);
 		assert.equal(createPayload.name.includes('-0h-'), false);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
+test('lfg command reuses existing channel selections', async () => {
+	const calls = [];
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = async (url, options) => {
+		calls.push({ url, options });
+		return new Response(JSON.stringify({ id: 'ignored' }), {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' },
+		});
+	};
+	const env = {
+		DISCORD_TOKEN: 't',
+		DISCORD_GUILD_ID: 'g',
+		DISCORD_LFG_ROLE_ID: '0',
+	};
+	try {
+		const interaction = {
+			data: {
+				options: [
+					{ name: 'channel', value: '1301289207737745449' },
+					{ name: 'slug', value: 'sex' },
+					{ name: 'max_players', value: '2' },
+				],
+			},
+			member: { user: { id: '1', username: 'Tester' } },
+			channel_id: '2',
+		};
+		const res = await lfgHandler(interaction, env, {});
+		const json = await readJson(res);
+		assert.ok(json.data.content.includes('<#1301289207737745449>'));
+		assert.ok(!json.data.content.includes('**Expires in:**'));
+		assert.ok(json.data.content.includes('**Max Players:** 4'));
+		assert.equal(calls.length, 1);
+		assert.ok(calls[0].url.includes('/channels/1301289207737745449/messages'));
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
@@ -489,7 +527,6 @@ test('submit command lists submissions when no options are provided', async () =
 	const json = await readJson(res);
 
 	assert.equal(json.data.flags, 64);
-	console.log(json.data.content);
 	assert.ok(json.data.content.includes('Science Team'));
 	assert.ok(json.data.content.includes('Diaper Division'));
 	assert.ok(json.data.content.includes('Totals'));

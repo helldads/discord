@@ -8,7 +8,7 @@ The bot currently implements the following slash commands:
 
 - `/help` – Display an overview of commands and useful channels.
 - `/highscores` – Display highscores of all HellDads who shared their results. Use `user` to view a specific player's stats.
-- `/lfg` – Create an on-demand squad voice channel with matchmaking details.
+- `/lfg` – Find friends by submit a looking for group request
 - `/modhelp` – Open a private support channel and ping the mods.
 - `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.

@@ -40,6 +40,17 @@ const expiries = [
 	{ name: 'never', value: 0 },
 ];
 
+const existingChannels = [
+	{ name: 'Airstrike Squad', value: '1301289207737745449' },
+	{ name: 'Brethren of Barrage Squad', value: '1301289518560706653' },
+	{ name: 'Church of the Strafe Squad', value: '1301289882567835648' },
+	{ name: 'Democracy Squad', value: '1301290147861495960' },
+	{ name: 'Flamethrower Squad', value: '1335348464405581875' },
+	{ name: 'Gas Squad', value: '1412124149358268446' },
+	{ name: 'Hellbomb Squad', value: '1352617019220033536' },
+	{ name: 'Incendiary Squad', value: '1352617296857923614' },
+];
+
 const bannedSlugs = ['ass', 'cum', 'dic', 'fag', 'fuk', 'fux', 'gay', 'hoe', 'kkk', 'nig', 'sex', 'tit', 'xxx', '420', '666', '888'];
 
 const SLUG_REGEX = /^[a-zA-Z0-9]{3}$/;
@@ -89,6 +100,13 @@ export const command = {
 			choices: maxPlayers,
 		},
 		{
+			name: 'channel',
+			description: 'Use an existing squad voice channel instead of creating one',
+			type: 3,
+			required: false,
+			choices: existingChannels,
+		},
+		{
 			name: 'slug',
 			description: '3-letter acronym used to identify the channel, default is "lfg"',
 			type: 3,
@@ -113,15 +131,16 @@ export const command = {
 const choiceName = (choices, value, fallback) => choices.find((c) => c.value === value)?.name || fallback;
 
 const formatSummary = (params) => {
-	const expireTime = params.deletionDate ? ` (<t:${Math.floor(params.deletionDate.getTime() / 1000)}:R>)` : '';
 	const lines = [
 		`**Faction:** ${choiceName(factions, params.faction, 'Any')}`,
 		`**Activity:** ${choiceName(activities, params.activity, 'Any')}`,
 		`**Difficulty:** ${choiceName(difficulties, params.difficulty, 'Any')}`,
 		`**Max Players:** ${params.maxPlayersLabel}`,
-		`**Expires in:** ${choiceName(expiries, params.expiryHours, 'never')}${expireTime}`,
 	];
-
+	if (params.deletionDate) {
+		const expireTime = params.deletionDate ? ` (<t:${Math.floor(params.deletionDate.getTime() / 1000)}:R>)` : '';
+		lines.push(`**Expires in:** ${choiceName(expiries, params.expiryHours, 'never')}${expireTime}`);
+	}
 	if (params.friendcode) {
 		const friendcode = params.friendcode.replace(/\D/g, '');
 		lines.push(`**Friend Code:** #${friendcode.slice(0, 4)}-${friendcode.slice(4)}`);
@@ -164,9 +183,11 @@ export async function handler(interaction, env, ctx) {
 	const difficulty = getOptionValue('difficulty');
 	const friendcode = getOptionValue('friendcode');
 	const comment = getOptionValue('comment');
-	const maxPlayersOption = getOptionValue('max_players') || 'unlimited';
-	const slug = (getOptionValue('slug') || 'lfg').toLowerCase();
-	const expiryHours = Number(getOptionValue('expiry') ?? 3);
+	const selectedChannelId = getOptionValue('channel');
+	const usesExistingChannel = Boolean(selectedChannelId);
+	const maxPlayersOption = usesExistingChannel ? '4' : getOptionValue('max_players') || 'unlimited';
+	const slug = usesExistingChannel ? null : (getOptionValue('slug') || 'lfg').toLowerCase();
+	const expiryHours = usesExistingChannel ? null : Number(getOptionValue('expiry') ?? 3);
 	const ping = getOptionValue('ping');
 	const shouldPing = ping === undefined ? true : Boolean(ping);
 
@@ -180,7 +201,7 @@ export async function handler(interaction, env, ctx) {
 		});
 	}
 
-	if (!isValidSlug(slug)) {
+	if (!usesExistingChannel && !isValidSlug(slug)) {
 		return Response.json({
 			type: 4,
 			data: {
@@ -195,43 +216,50 @@ export async function handler(interaction, env, ctx) {
 
 	const userId = interaction.member?.user?.id;
 	const username = interaction.member.user.username || 'squad';
-	const channelName = buildChannelName({ slug, expiryHours, difficulty, faction, activity, username });
-
-	const channelPayload = {
-		name: channelName,
-		type: 2, // GUILD_VOICE
-		user_limit: Number.isNaN(userLimit) ? 0 : userLimit,
-		position: 0,
-	};
-
-	if (categoryId) {
-		channelPayload.parent_id = categoryId;
-	}
 
 	try {
-		const channelRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bot ${token}`,
-			},
-			body: JSON.stringify(channelPayload),
-		});
-		const channelData = await channelRes.json();
+		let channelData;
+		let deletionDate = null;
 
-		if (!channelRes.ok) {
-			console.error('Failed to create voice channel', channelData);
-			return Response.json({
-				type: 4,
-				data: {
-					content: 'Failed to create a voice channel. Please try again later.',
-					flags: 64,
+		if (usesExistingChannel) {
+			channelData = { id: selectedChannelId };
+		} else {
+			const channelName = buildChannelName({ slug, expiryHours, difficulty, faction, activity, username });
+			const channelPayload = {
+				name: channelName,
+				type: 2, // GUILD_VOICE
+				user_limit: Number.isNaN(userLimit) ? 0 : userLimit,
+				position: 0,
+			};
+
+			if (categoryId) {
+				channelPayload.parent_id = categoryId;
+			}
+
+			const channelRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bot ${token}`,
 				},
+				body: JSON.stringify(channelPayload),
 			});
-		}
+			channelData = await channelRes.json();
 
-		const creationTimestamp = getTimestampFromSnowflake(channelData.id);
-		const deletionDate = expiryHours > 0 ? new Date(creationTimestamp + expiryHours * 60 * 60 * 1000) : null;
+			if (!channelRes.ok) {
+				console.error('Failed to create voice channel', channelData);
+				return Response.json({
+					type: 4,
+					data: {
+						content: 'Failed to create a voice channel. Please try again later.',
+						flags: 64,
+					},
+				});
+			}
+
+			const creationTimestamp = getTimestampFromSnowflake(channelData.id);
+			deletionDate = expiryHours > 0 ? new Date(creationTimestamp + expiryHours * 60 * 60 * 1000) : null;
+		}
 
 		const summary = formatSummary({
 			faction,
@@ -261,7 +289,7 @@ export async function handler(interaction, env, ctx) {
 		return Response.json({
 			type: 4,
 			data: {
-				content: shouldPing ? confirmationMessage : `Your channel has been created: <#${channelData.id}>`,
+				content: shouldPing ? confirmationMessage : `Your channel is ready: <#${channelData.id}>`,
 				allowed_mentions: shouldPing ? { users: [userId] } : undefined,
 				flags: shouldPing ? undefined : 64,
 			},
@@ -271,7 +299,7 @@ export async function handler(interaction, env, ctx) {
 		return Response.json({
 			type: 4,
 			data: {
-				content: 'Failed to create a squad channel. Please try again.',
+				content: 'Failed to setup a squad channel. Please try again.',
 				flags: 64,
 			},
 		});
