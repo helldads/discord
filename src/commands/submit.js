@@ -7,22 +7,27 @@ const DIVISIONS = {
 	diaper: {
 		column: 'event_diaper_count',
 		display: 'Diaper Division',
+		logo: '<:dd_logo:1345027087446052914>',
 	},
 	baldzerkers: {
 		column: 'event_baldzerkers_count',
 		display: 'Baldzerkers',
+		logo: '<:bz_logo:1345027059327438848>',
 	},
 	science: {
 		column: 'event_science_count',
 		display: 'Science Team',
+		logo: '<:st_logo:1345027109944299562>',
 	},
 	crayon: {
 		column: 'event_crayon_count',
 		display: 'Crayon Commandos',
+		logo: '<:cc_logo:1345027134862655549>',
 	},
 	snack: {
 		column: 'event_snack_count',
 		display: 'S.N.A.C.K. Division',
+		logo: '<:sd_logo:1395099109203116083>',
 	},
 };
 
@@ -141,7 +146,7 @@ function formatSubmissionSummary(rows) {
 
 			totals[key] = (totals[key] ?? 0) + numericCount;
 			const timestampSeconds = Math.floor(new Date(row.date).getTime() / 1000);
-			submissions.push(`<t:${timestampSeconds}:d> <t:${timestampSeconds}:t>: ${formatNumber(numericCount)} (${division.display})`);
+			submissions.push(`${division.logo} <t:${timestampSeconds}:d> <t:${timestampSeconds}:t>: ${formatNumber(numericCount)}`);
 		}
 	}
 
@@ -151,7 +156,7 @@ function formatSubmissionSummary(rows) {
 
 	const totalLines = Object.entries(totals).map(([key, total]) => {
 		const division = DIVISIONS[key];
-		return `• ${division.display}: ${formatNumber(total)}`;
+		return `• ${division.logo} ${division.display}: ${formatNumber(total)}`;
 	});
 
 	const overall = Object.values(totals).reduce((sum, value) => sum + value, 0);
