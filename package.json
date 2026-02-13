@@ -1,6 +1,6 @@
 {
 	"name": "dadbot",
-	"version": "0.21.1",
+	"version": "0.21.2",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -13,7 +13,7 @@
 		"test": "node --test"
 	},
 	"devDependencies": {
-		"wrangler": "^4.19.1"
+		"wrangler": "^4.54.0"
 	},
 	"dependencies": {
 		"dotenv": "^16.5.0",
