@@ -1,3 +1,5 @@
+// TEMPORARILY DISABLED
+/*
 import { statisticsFields } from '../data/statistics.js';
 import { formatData } from '../lib/statistics.js';
 import { formatNumber, formatDataTable } from '../lib/format.js';
@@ -96,3 +98,4 @@ export async function handler(interaction, env, ctx) {
 		data: { content: message, flags: 64 },
 	});
 }
+*/

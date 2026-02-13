@@ -1,4 +1,6 @@
+// TEMPORARILY DISABLED
 // Slash command for users to update their personal game stats
+/*
 import { statisticsFields } from '../data/statistics.js';
 import { formatData, gatherOptionValues, parseData } from '../lib/statistics.js';
 
@@ -80,3 +82,4 @@ export async function handler(interaction, env, ctx) {
 		},
 	});
 }
+ */

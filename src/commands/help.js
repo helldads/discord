@@ -25,8 +25,8 @@ export async function handler(interaction, env, ctx) {
 		'• `/stats` – Display community statistics.',
 		'• `/event` – Display the current event and statistics.',
 		'• `/submit` – Submit your mission results for the current community event.',
-		'• `/update` – Update your game statistics for the highscores.',
-		'• `/highscores` – Display highscores of all HellDads who /update their results.',
+		//'• `/update` – Update your game statistics for the highscores.',
+		//'• `/highscores` – Display highscores of all HellDads who /update their results.',
 		'• `/help` – Show this help message.',
 	];
 

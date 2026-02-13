@@ -9,10 +9,10 @@ import { handler as helloHandler } from '../src/commands/helloworld.js';
 import { handler as helpHandler } from '../src/commands/help.js';
 import { handler as quoteHandler } from '../src/commands/quote.js';
 import { handler as statsHandler } from '../src/commands/stats.js';
-import { handler as highscoresHandler } from '../src/commands/highscores.js';
+//import { handler as highscoresHandler } from '../src/commands/highscores.js';
 import { handler as modhelpHandler } from '../src/commands/modhelp.js';
 import { handler as submitHandler } from '../src/commands/submit.js';
-import { handler as updateHandler } from '../src/commands/update.js';
+//import { handler as updateHandler } from '../src/commands/update.js';
 import { handler as eventHandler } from '../src/commands/event.js';
 import { buildChannelName, buildConfirmationMessage, handler as lfgHandler, isValidSlug } from '../src/commands/lfg.js';
 import { getTimestampFromSnowflake } from '../src/lib/snowflake.js';
@@ -93,10 +93,14 @@ function createFakeDB(state = {}) {
 test('All commands export a valid declaration object', async () => {
 	const commandsDir = path.resolve(__dirname, '../src/commands');
 	const files = fs.readdirSync(commandsDir).filter((file) => file.endsWith('.js'));
+	const skip = ['highscores.js', 'update.js'];
 
 	for (const file of files) {
 		const commandModule = await import(pathToFileURL(path.join(commandsDir, file)));
 		const command = commandModule.command;
+
+		// skip inactive files
+		if (skip.indexOf(file) != -1) continue;
 
 		assert.equal(typeof command, 'object', `Export in ${file} must be an discord compatible object declaration`);
 		assert.equal(typeof command.name, 'string', `Command ${file} must have a string 'name'`);
@@ -183,6 +187,8 @@ test('stats command returns community stats', async () => {
 	}
 });
 
+// TEMPORARILY DISABLED
+/*
 test('highscores command executes with stub DB', async () => {
 	const env = { STATISTICS_DB: createFakeDB() };
 	const res = await highscoresHandler({ data: {} }, env, {});
@@ -198,6 +204,7 @@ test('update command executes with stub DB', async () => {
 	const json = await readJson(res);
 	assert.ok(json.data.content.includes('No data provided.'));
 });
+*/
 
 test('modhelp command triggers fetch calls', async () => {
 	const calls = [];

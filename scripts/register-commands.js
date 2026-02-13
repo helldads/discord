@@ -7,8 +7,8 @@ import * as modHelp from '../src/commands/modhelp.js';
 import * as help from '../src/commands/help.js';
 import * as lfg from '../src/commands/lfg.js';
 import * as submit from '../src/commands/submit.js';
-import * as update from '../src/commands/update.js';
-import * as highscores from '../src/commands/highscores.js';
+//import * as update from '../src/commands/update.js';
+//import * as highscores from '../src/commands/highscores.js';
 import * as event from '../src/commands/event.js';
 
 const commands = [
@@ -18,8 +18,8 @@ const commands = [
 	help.command,
 	lfg.command,
 	submit.command,
-	update.command,
-	highscores.command,
+	//update.command,
+	//highscores.command,
 	event.command,
 ];
 
