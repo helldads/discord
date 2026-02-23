@@ -95,7 +95,7 @@ export const command = {
 		},
 		{
 			name: 'max_players',
-			description: 'Team size?',
+			description: 'How many can join the voice chat? (does not apply to existing channels)',
 			type: 3,
 			required: false,
 			choices: maxPlayers,
