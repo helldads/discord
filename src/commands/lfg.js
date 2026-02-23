@@ -45,6 +45,7 @@ const existingChannels = [
 	{ name: 'Brethren of Barrage Squad', value: '1301289518560706653' },
 	{ name: 'Church of the Strafe Squad', value: '1301289882567835648' },
 	{ name: 'Democracy Squad', value: '1301290147861495960' },
+	{ name: 'Eagle Squad', value: '1335347566199570514' },
 	{ name: 'Flamethrower Squad', value: '1335348464405581875' },
 	{ name: 'Gas Squad', value: '1412124149358268446' },
 	{ name: 'Hellbomb Squad', value: '1352617019220033536' },
@@ -94,7 +95,7 @@ export const command = {
 		},
 		{
 			name: 'max_players',
-			description: 'Limit how many players can join',
+			description: 'Team size?',
 			type: 3,
 			required: false,
 			choices: maxPlayers,
