@@ -7,22 +7,27 @@ const DIVISIONS = {
 	diaper: {
 		column: 'event_kotk_diaper_kills',
 		display: 'Diaper Division',
+		logo: '<:dd_logo:1345027087446052914>',
 	},
 	baldzerkers: {
 		column: 'event_kotk_baldzerkers_kills',
 		display: 'Baldzerkers',
+		logo: '<:bz_logo:1345027059327438848>',
 	},
 	science: {
 		column: 'event_kotk_science_kills',
 		display: 'Science Team',
+		logo: '<:st_logo:1345027109944299562>',
 	},
 	crayon: {
 		column: 'event_kotk_crayon_kills',
 		display: 'Crayon Commandos',
+		logo: '<:cc_logo:1345027134862655549>',
 	},
 	snack: {
 		column: 'event_kotk_snack_kills',
 		display: 'S.N.A.C.K. Division',
+		logo: '<:sd_logo:1395099109203116083>',
 	},
 };
 
@@ -73,20 +78,14 @@ export const command = {
 	],
 };
 
-function parseSubmission(options) {
-	const provided = Object.entries(options).filter(([, value]) => value !== undefined && value !== null);
-
-	if (provided.length === 0) {
-		return { error: 'Please submit kills for exactly one division.' };
-	}
-
-	if (provided.length > 1) {
+function parseSubmission(providedOptions) {
+	if (providedOptions.length > 1) {
 		return {
 			error: 'Only one division can be submitted at a time. Please submit separately.',
 		};
 	}
 
-	const [divisionKey, killsRaw] = provided[0];
+	const [divisionKey, killsRaw] = providedOptions[0];
 	const division = DIVISIONS[divisionKey];
 	if (!division) {
 		return { error: 'Unknown division selected.' };
@@ -130,11 +129,12 @@ async function countRecentSubmissions(db, eventKey, user) {
 		.first();
 	return res ? Number(res.cnt) : 0;
 }
-/*
+
 async function getUserSubmissions(db, eventKey, userId) {
+	const columns = Object.values(DIVISIONS).map((division) => division.column).join(', ');
 	const res = await db
 		.prepare(
-			'SELECT date, event_diaper_count, event_baldzerkers_count, event_science_count, event_crayon_count, event_snack_count FROM submissions WHERE event_key = ? AND user = ?;',
+			`SELECT date, ${columns} FROM submissions WHERE event_key = ? AND user = ? ORDER BY date DESC;`,
 		)
 		.bind(eventKey, userId)
 		.all();
@@ -155,7 +155,7 @@ function formatSubmissionSummary(rows) {
 
 			totals[key] = (totals[key] ?? 0) + numericCount;
 			const timestampSeconds = Math.floor(new Date(row.date).getTime() / 1000);
-			submissions.push(`${division.logo} <t:${timestampSeconds}:d> <t:${timestampSeconds}:t>: ${formatNumber(numericCount)}`);
+			submissions.push(`${division.logo} ${division.display} • <t:${timestampSeconds}:d> <t:${timestampSeconds}:t>: ${formatNumber(numericCount)}`);
 		}
 	}
 
@@ -179,7 +179,7 @@ function formatSubmissionSummary(rows) {
 		`Overall: ${formatNumber(overall)}`,
 	].join('\n');
 }
-*/
+
 async function getUserTotals(db, eventKey, userId, column) {
 	const sql = `SELECT SUM(${column}) AS total FROM submissions WHERE event_key = ? AND user = ?;`;
 	const res = await db.prepare(sql).bind(eventKey, userId).first();
@@ -210,13 +210,10 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const options = parseOptions(interaction);
-	const { division, kills, error } = parseSubmission(options);
-	/*
-	// RETURN USER SUBMISSIONS WHEN NO ARGUMENT IS GIVEN
-	const provided = Object.values(options).filter((value) => value !== undefined && value !== null);
+	const providedEntries = Object.entries(options).filter(([, value]) => value !== undefined && value !== null);
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 
-	if (provided.length === 0) {
+	if (providedEntries.length === 0) {
 		try {
 			const rows = await getUserSubmissions(env.STATISTICS_DB, eventKey, userId);
 			const summary = formatSubmissionSummary(rows);
@@ -233,9 +230,7 @@ export async function handler(interaction, env, ctx) {
 			});
 		}
 	}
-
-	const { division, stratagems, error } = parseSubmission(options);
-*/
+	const { division, kills, error } = parseSubmission(providedEntries);
 
 	if (error) {
 		return Response.json({
@@ -243,8 +238,6 @@ export async function handler(interaction, env, ctx) {
 			data: { content: error, flags: 64 },
 		});
 	}
-
-	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
 	// Disabled for lower CPU usage

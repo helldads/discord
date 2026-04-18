@@ -36,6 +36,7 @@ function createFakeDB(state = {}) {
 		userTotals: {},
 		totals: {},
 		highest: null,
+		submissions: [],
 	};
 	const data = { ...defaults, ...state };
 	return {
@@ -62,10 +63,10 @@ function createFakeDB(state = {}) {
 					}
 				},
 				async all() {
-					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('WHERE event_key = ? AND user = ?')) {
-						return { results: [data.userTotals] };
+					if (sql.includes('FROM submissions WHERE event_key = ? AND user = ? ORDER BY date DESC')) {
+						return { results: data.submissions };
 					}
-					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('COUNT(*) AS submissions')) {
+					if (sql.includes('COUNT(*) AS submissions') && sql.includes('FROM submissions WHERE event_key = ?;')) {
 						return { results: [data.totals] };
 					}
 					if (sql.includes('UNION ALL') && sql.includes('ORDER BY kills DESC LIMIT 1')) {
@@ -493,7 +494,7 @@ test('submit command rejects invalid payloads', async () => {
 
 	const resNoDivision = await submitHandler(noDivision, env, {});
 	const jsonNoDivision = await readJson(resNoDivision);
-	assert.ok(jsonNoDivision.data.content.includes('exactly one division'));
+	assert.ok(jsonNoDivision.data.content.includes('You have no submissions for this event yet.'));
 
 	const resMulti = await submitHandler(multipleDivisions, env, {});
 	const jsonMulti = await readJson(resMulti);
@@ -514,16 +515,15 @@ test('submit command rejects invalid payloads', async () => {
 	assert.ok(jsonCap.data.content.includes('Kill count exceptionally high'));
 });
 
-/*
 test('submit command lists submissions when no options are provided', async () => {
 	const env = {
 		STATISTICS_DB: createFakeDB({
 			submissions: [
-				{ date: '2025-01-01T00:00:00.000Z', event_science_count: 100 },
-				{ date: '2025-01-02T00:00:00.000Z', event_diaper_count: 50 },
+				{ date: '2025-01-01T00:00:00.000Z', event_kotk_science_kills: 100 },
+				{ date: '2025-01-02T00:00:00.000Z', event_kotk_diaper_kills: 50 },
 			],
 		}),
-		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks3',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 
@@ -536,9 +536,10 @@ test('submit command lists submissions when no options are provided', async () =
 	assert.ok(json.data.content.includes('Diaper Division'));
 	assert.ok(json.data.content.includes('Totals'));
 	assert.ok(json.data.content.includes('Overall'));
+	assert.ok(json.data.content.includes('150'));
 	assert.ok(json.data.content.includes(`<t:${Math.floor(new Date('2025-01-01T00:00:00.000Z').getTime() / 1000)}:d>`));
 });
- */
+
 /*
 // DISABLED FOR CPU USAGE OPTIMIZATION
 test('submit command enforces rate limit after three submissions', async () => {
@@ -584,13 +585,14 @@ test('event command aggregates event results', async () => {
 	};
 	const res = await eventHandler({ data: {} }, env, {});
 	const json = await readJson(res);
+	console.log(json.data.content);
 	assert.ok(json.data.content.includes('King of the Kill - Season 3'));
-	assert.ok(json.data.content.includes(':first_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 kills'));
-	assert.ok(
-		json.data.content.includes(
-			'<:helldads_baby:1316435213559136316> — <:sd_logo:1395099109203116083> **S.N.A.C.K. Division**: 15,300 kills',
-		),
-	);
+	assert.ok(json.data.content.includes(':first_place: — <:helldads_logo:1313668566221848626> **Weekend Warrior Alliance**: 68,900 kills'));
+	assert.ok(json.data.content.includes('  <:bz_logo:1345027059327438848> **Baldzerkers**: 28,500 kills'));
+	assert.ok(json.data.content.includes('  <:dd_logo:1345027087446052914> **Diaper Division**: 25,100 kills'));
+	assert.ok(json.data.content.includes('  <:sd_logo:1395099109203116083> **S.N.A.C.K. Division**: 15,300 kills'));
+	assert.ok(json.data.content.includes(':second_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 kills'));
+	assert.ok(json.data.content.includes(':third_place: — <:cc_logo:1345027134862655549> **Crayon Commandos**: 21,500 kills'));
 	assert.ok(json.data.content.includes('Total kills: 120,400'));
 	assert.ok(json.data.content.includes('Total submissions: 240'));
 	assert.ok(json.data.content.includes('Average kills: 501'));

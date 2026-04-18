@@ -61,7 +61,7 @@
 	 */
 	"vars": {
 		"HELLDADS_CODE_OF_CONDUCT": "https://www.helldads.org/code-of-conduct",
-		"HELLDADS_CURRENT_EVENT_KEY": "kotks3test",
+		"HELLDADS_CURRENT_EVENT_KEY": "kotks3",
 		"HELLDADS_CURRENT_EVENT_END": "2026-04-27T12:00:00.999Z",
 		"HELLDADS_QUOTES_DAILY_URL": "https://www.helldads.org/data/quotes/daily.json",
 		"HELLDADS_QUOTES_ALL_URL": "https://www.helldads.org/data/quotes/all.json",

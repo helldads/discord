@@ -9,6 +9,11 @@ const DIVISIONS = [
 	{ key: 'crayon', column: 'event_kotk_crayon_kills', name: 'Crayon Commandos', logo: '<:cc_logo:1345027134862655549>' },
 	{ key: 'snack', column: 'event_kotk_snack_kills', name: 'S.N.A.C.K. Division', logo: '<:sd_logo:1395099109203116083>' },
 ];
+const DIVISION_ALLIANCE = {
+	name: 'Weekend Warrior Alliance',
+	logo: '<:helldads_logo:1313668566221848626>',
+	memberKeys: ['baldzerkers', 'diaper', 'snack'],
+};
 
 export const command = {
 	name: 'event',
@@ -30,6 +35,7 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const divisionTotals = DIVISIONS.map((division) => ({
+		key: division.key,
 		name: division.name,
 		logo: division.logo,
 		total: Number(totalsRow?.[division.key] || 0),
@@ -89,31 +95,50 @@ export async function handler(interaction, env, ctx) {
 					`${hours} hour${hours === 1 ? '' : 's'}`,
 					`${minutes} minute${minutes === 1 ? '' : 's'}`,
 				].filter(Boolean);
-				timeLeftLine = `:clock7: **Time left**: ${segments.join(' ')} (${formatted} GMT)`;
+				timeLeftLine = `:clock7: **Time left**: ${segments.join(' ')} (${formatted} UTC)`;
 			}
 		}
 	}
 
-	const rankingLines = divisionTotals.map((division, index) => {
-		const icon =
-			index == 0
-				? ':first_place:'
-				: index == 1
-					? ':second_place:'
-					: index == 2
-						? ':third_place:'
-						: index == 3
-							? '<:helldad:1316506358211805244>'
-							: '<:helldads_baby:1316435213559136316>';
-		return `${icon} — ${division.logo} **${division.name}**: ${formatNumber(division.total)} kills`;
-	});
+	const divisionTotalsByKey = Object.fromEntries(divisionTotals.map((division) => [division.key, division]));
+	const allianceMembers = DIVISION_ALLIANCE.memberKeys
+		.map((key) => divisionTotalsByKey[key])
+		.filter(Boolean)
+		.sort((a, b) => b.total - a.total);
+	const allianceTotal = allianceMembers.reduce((sum, member) => sum + member.total, 0);
+	const rankedCompetitors = [
+		{
+			type: 'alliance',
+			name: DIVISION_ALLIANCE.name,
+			logo: DIVISION_ALLIANCE.logo,
+			total: allianceTotal,
+			members: allianceMembers,
+		},
+		divisionTotalsByKey.crayon,
+		divisionTotalsByKey.science,
+	].filter(Boolean);
 
+	rankedCompetitors.sort((a, b) => b.total - a.total);
+
+	const rankingLines = rankedCompetitors.flatMap((competitor, index) => {
+		const icon =
+			index == 0 ? ':first_place:' : index == 1 ? ':second_place:' : index == 2 ? ':third_place:' : '<:helldad:1316506358211805244>';
+		const headline = `${icon} — ${competitor.logo} **${competitor.name}**: ${formatNumber(competitor.total)} kills`;
+		if (competitor.type !== 'alliance') {
+			return [headline];
+		}
+		const memberLines = competitor.members.map(
+			(member, memberIndex) => `  ${member.logo} **${member.name}**: ${formatNumber(member.total)} kills`,
+		);
+		return [headline, ...memberLines];
+	});
+	console.log(rankingLines);
 	const highestLine = highestSubmission
 		? `<:xdad:1419602524545093692> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.kills)} kills`
 		: 'Highest result per submission: N/A';
 
 	const message = [
-		'# King of the Kill - Season 3',
+		'# King of the Kill - Season 3: THE UNHOLY ALLIANCE',
 		'',
 		'## Leaderboard',
 		...rankingLines,
