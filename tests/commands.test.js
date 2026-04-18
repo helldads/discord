@@ -36,7 +36,6 @@ function createFakeDB(state = {}) {
 		userTotals: {},
 		totals: {},
 		highest: null,
-		submissions: [],
 	};
 	const data = { ...defaults, ...state };
 	return {
@@ -63,21 +62,14 @@ function createFakeDB(state = {}) {
 					}
 				},
 				async all() {
-					if (sql.includes('SUM(event_diaper_count') && sql.includes('WHERE event_key = ? AND user = ?')) {
+					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('WHERE event_key = ? AND user = ?')) {
 						return { results: [data.userTotals] };
 					}
-					if (sql.includes('SUM(event_diaper_count') && sql.includes('COUNT(*) AS submissions')) {
+					if (sql.includes('SUM(event_kotk_diaper_kills') && sql.includes('COUNT(*) AS submissions')) {
 						return { results: [data.totals] };
 					}
-					if (sql.includes('UNION ALL') && sql.includes('ORDER BY submissions DESC LIMIT 1')) {
+					if (sql.includes('UNION ALL') && sql.includes('ORDER BY kills DESC LIMIT 1')) {
 						return { results: data.highest ? [data.highest] : [] };
-					}
-					if (
-						sql.includes('event_baldzerkers_count') &&
-						sql.includes('event_crayon_count') &&
-						sql.includes('FROM submissions WHERE event_key = ? AND user = ?')
-					) {
-						return { results: data.submissions };
 					}
 					return { results: [] };
 				},
@@ -432,27 +424,27 @@ test('lfg command rejects invalid friend code', async () => {
 	assert.equal(json.data.flags, 64);
 });
 
-test('submit command records stratagems and returns totals', async () => {
+test('submit command records kills and returns totals', async () => {
 	const db = createFakeDB({
-		userTotals: { event_science_count: 3460 },
+		userTotals: { event_kotk_science_kills: 3460 },
 	});
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks3',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const interaction = {
-		data: { options: [{ name: 'science', value: 50 }] },
+		data: { options: [{ name: 'science', value: 750 }] },
 		member: { user: { id: '1', username: 'Tester' } },
 	};
 	const res = await submitHandler(interaction, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('reported **50 stratagems used** for **Science Team**'));
+	assert.ok(json.data.content.includes('submitted **750 kills** to **Science Team**'));
 	assert.ok(json.data.content.includes('Total contribution: 3,460'));
 });
 
 test('submit command fails with no active event', async () => {
-	let env = { HELLDADS_CURRENT_EVENT_KEY: 'hpp25', HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString() };
+	let env = { HELLDADS_CURRENT_EVENT_KEY: 'kotks3', HELLDADS_CURRENT_EVENT_END: new Date(Date.now() - 1).toISOString() };
 	const interaction = {
 		data: { options: [{ name: 'science', value: 100 }] },
 		member: { user: { id: '1', username: 'Tester' } },
@@ -479,9 +471,10 @@ test('submit command fails with no active event', async () => {
 test('submit command rejects invalid payloads', async () => {
 	const env = {
 		STATISTICS_DB: createFakeDB(),
-		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks3',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
+	const noDivision = { data: { options: [] }, member: { user: { id: '1' } } };
 	const multipleDivisions = {
 		data: {
 			options: [
@@ -495,12 +488,16 @@ test('submit command rejects invalid payloads', async () => {
 		data: { options: [{ name: 'unknown', value: 100 }] },
 		member: { user: { id: '1' } },
 	};
-	//const invalidCount = { data: { options: [{ name: 'science', value: 0 }] }, member: { user: { id: '1' } } };
+	const invalidKills = { data: { options: [{ name: 'science', value: 0 }] }, member: { user: { id: '1' } } };
 	const overCap = { data: { options: [{ name: 'science', value: 3000 }] }, member: { user: { id: '1' } } };
+
+	const resNoDivision = await submitHandler(noDivision, env, {});
+	const jsonNoDivision = await readJson(resNoDivision);
+	assert.ok(jsonNoDivision.data.content.includes('exactly one division'));
 
 	const resMulti = await submitHandler(multipleDivisions, env, {});
 	const jsonMulti = await readJson(resMulti);
-	assert.ok(jsonMulti.data.content.includes('Only one division can be submitted at a time.'));
+	assert.ok(jsonMulti.data.content.includes('Only one division'));
 
 	const resDivision = await submitHandler(invalidDivision, env, {});
 	const jsonDivision = await readJson(resDivision);
@@ -514,9 +511,10 @@ test('submit command rejects invalid payloads', async () => {
 	*/
 	const resCap = await submitHandler(overCap, env, {});
 	const jsonCap = await readJson(resCap);
-	assert.ok(jsonCap.data.content.includes('Submission count exceptionally high'));
+	assert.ok(jsonCap.data.content.includes('Kill count exceptionally high'));
 });
 
+/*
 test('submit command lists submissions when no options are provided', async () => {
 	const env = {
 		STATISTICS_DB: createFakeDB({
@@ -540,15 +538,16 @@ test('submit command lists submissions when no options are provided', async () =
 	assert.ok(json.data.content.includes('Overall'));
 	assert.ok(json.data.content.includes(`<t:${Math.floor(new Date('2025-01-01T00:00:00.000Z').getTime() / 1000)}:d>`));
 });
-
+ */
 /*
+// DISABLED FOR CPU USAGE OPTIMIZATION
 test('submit command enforces rate limit after three submissions', async () => {
 	const now = Date.now();
 	const count = { cnt: 3 };
 	const db = createFakeDB({ count });
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'kotks2',
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks3',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const interaction = {
@@ -575,27 +574,27 @@ test('event command aggregates event results', async () => {
 			user: '99',
 			name: 'xnShiLong',
 			division: 'Science Team',
-			submissions: 1200,
+			kills: 1200,
 		},
 	});
 	const env = {
 		STATISTICS_DB: db,
-		HELLDADS_CURRENT_EVENT_KEY: 'hpp25',
+		HELLDADS_CURRENT_EVENT_KEY: 'kotks3',
 		HELLDADS_CURRENT_EVENT_END: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(),
 	};
 	const res = await eventHandler({ data: {} }, env, {});
 	const json = await readJson(res);
-	assert.ok(json.data.content.includes('Holiday Payload Program 2025'));
-	assert.ok(json.data.content.includes(':first_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 stratagems'));
+	assert.ok(json.data.content.includes('King of the Kill - Season 3'));
+	assert.ok(json.data.content.includes(':first_place: — <:st_logo:1345027109944299562> **Science Team**: 30,000 kills'));
 	assert.ok(
 		json.data.content.includes(
-			'<:helldads_baby:1316435213559136316> — <:sd_logo:1395099109203116083> **S.N.A.C.K. Division**: 15,300 stratagems',
+			'<:helldads_baby:1316435213559136316> — <:sd_logo:1395099109203116083> **S.N.A.C.K. Division**: 15,300 kills',
 		),
 	);
-	assert.ok(json.data.content.includes('Total: 120,400'));
+	assert.ok(json.data.content.includes('Total kills: 120,400'));
 	assert.ok(json.data.content.includes('Total submissions: 240'));
-	assert.ok(json.data.content.includes('Average per submissions: 501'));
-	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per submission: <@99> with 1,200'));
+	assert.ok(json.data.content.includes('Average kills: 501'));
+	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per submission: <@99> with 1,200 kills'));
 	assert.ok(json.data.content.includes('**Time left**:'));
-	assert.ok(json.data.content.includes('Use `/submit` to report the number of stratagems used by your division after each mission!'));
+	assert.ok(json.data.content.includes('Use `/submit` to contribute your kill count'));
 });

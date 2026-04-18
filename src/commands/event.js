@@ -1,18 +1,18 @@
 import { formatNumber } from '../lib/format.js';
 
-const EVENT_KEY = 'hpp25';
+const EVENT_KEY = 'kotks3';
 
 const DIVISIONS = [
-	{ key: 'science', column: 'event_science_count', name: 'Science Team', logo: '<:st_logo:1345027109944299562>' },
-	{ key: 'baldzerkers', column: 'event_baldzerkers_count', name: 'Baldzerkers', logo: '<:bz_logo:1345027059327438848>' },
-	{ key: 'diaper', column: 'event_diaper_count', name: 'Diaper Division', logo: '<:dd_logo:1345027087446052914>' },
-	{ key: 'crayon', column: 'event_crayon_count', name: 'Crayon Commandos', logo: '<:cc_logo:1345027134862655549>' },
-	{ key: 'snack', column: 'event_snack_count', name: 'S.N.A.C.K. Division', logo: '<:sd_logo:1395099109203116083>' },
+	{ key: 'science', column: 'event_kotk_science_kills', name: 'Science Team', logo: '<:st_logo:1345027109944299562>' },
+	{ key: 'baldzerkers', column: 'event_kotk_baldzerkers_kills', name: 'Baldzerkers', logo: '<:bz_logo:1345027059327438848>' },
+	{ key: 'diaper', column: 'event_kotk_diaper_kills', name: 'Diaper Division', logo: '<:dd_logo:1345027087446052914>' },
+	{ key: 'crayon', column: 'event_kotk_crayon_kills', name: 'Crayon Commandos', logo: '<:cc_logo:1345027134862655549>' },
+	{ key: 'snack', column: 'event_kotk_snack_kills', name: 'S.N.A.C.K. Division', logo: '<:sd_logo:1395099109203116083>' },
 ];
 
 export const command = {
 	name: 'event',
-	description: 'Display summary of the Holiday Payload Program 2025 event.',
+	description: 'Display summary of the King of the Kill - Season 3 event.',
 };
 
 export async function handler(interaction, env, ctx) {
@@ -37,17 +37,17 @@ export async function handler(interaction, env, ctx) {
 
 	divisionTotals.sort((a, b) => b.total - a.total);
 
-	const totalCount = divisionTotals.reduce((sum, division) => sum + division.total, 0);
+	const totalKills = divisionTotals.reduce((sum, division) => sum + division.total, 0);
 	const totalSubmissions = Number(totalsRow?.submissions || 0);
-	const averageSubmissions = totalSubmissions > 0 ? Math.floor(totalCount / totalSubmissions) : 0;
+	const averageKills = totalSubmissions > 0 ? Math.floor(totalKills / totalSubmissions) : 0;
 
 	let highestSubmission = null;
 	try {
 		const unionQueries = DIVISIONS.map(
 			(division) =>
-				`SELECT user, name, '${division.name}' AS division, ${division.column} AS submissions, date FROM submissions WHERE event_key = ? AND ${division.column} IS NOT NULL`,
+				`SELECT user, name, '${division.name}' AS division, ${division.column} AS kills, date FROM submissions WHERE event_key = ? AND ${division.column} IS NOT NULL`,
 		).join(' UNION ALL ');
-		const res = await env.STATISTICS_DB.prepare(`${unionQueries} ORDER BY submissions DESC LIMIT 1;`)
+		const res = await env.STATISTICS_DB.prepare(`${unionQueries} ORDER BY kills DESC LIMIT 1;`)
 			.bind(...Array(DIVISIONS.length).fill(eventKey))
 			.all();
 		highestSubmission = res?.results?.[0] || null;
@@ -105,27 +105,27 @@ export async function handler(interaction, env, ctx) {
 						: index == 3
 							? '<:helldad:1316506358211805244>'
 							: '<:helldads_baby:1316435213559136316>';
-		return `${icon} — ${division.logo} **${division.name}**: ${formatNumber(division.total)} stratagems`;
+		return `${icon} — ${division.logo} **${division.name}**: ${formatNumber(division.total)} kills`;
 	});
 
 	const highestLine = highestSubmission
-		? `<:xdad:1419602524545093692> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.submissions)}`
+		? `<:xdad:1419602524545093692> Highest result per submission: <@${highestSubmission.user}> with ${formatNumber(highestSubmission.kills)} kills`
 		: 'Highest result per submission: N/A';
 
 	const message = [
-		'# Holiday Payload Program 2025',
+		'# King of the Kill - Season 3',
 		'',
 		'## Leaderboard',
 		...rankingLines,
 		'',
-		`:trophy: Total: ${formatNumber(totalCount)}`,
+		`:trophy: Total kills: ${formatNumber(totalKills)}`,
 		`:chart_with_upwards_trend: Total submissions: ${formatNumber(totalSubmissions)}`,
-		`:bar_chart: Average per submissions: ${formatNumber(averageSubmissions)}`,
+		`:bar_chart: Average kills: ${formatNumber(averageKills)}`,
 		highestLine,
 		'',
 		timeLeftLine,
 		'',
-		'-# Use `/submit` to report the number of stratagems used by your division after each mission! If you beat the highest result per mission, you must attach a screenshot as proof. Learn more about our divisions in <#1345040640949489674>.',
+		'-# Use `/submit` to contribute your kill count after each mission! If you beat the highest result per mission, you must attach a screenshot as proof. Learn more about our divisions in <#1345040640949489674>.',
 	].join('\n');
 
 	return Response.json({

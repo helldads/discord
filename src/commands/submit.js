@@ -1,43 +1,38 @@
 import { formatNumber } from '../lib/format.js';
 
-const EVENT_KEY = 'hpp25';
-const MAX_SUBMISSION = 1000;
+const EVENT_KEY = 'kotks3';
+const MAX_SUBMISSION = 3000;
 
 const DIVISIONS = {
 	diaper: {
-		column: 'event_diaper_count',
+		column: 'event_kotk_diaper_kills',
 		display: 'Diaper Division',
-		logo: '<:dd_logo:1345027087446052914>',
 	},
 	baldzerkers: {
-		column: 'event_baldzerkers_count',
+		column: 'event_kotk_baldzerkers_kills',
 		display: 'Baldzerkers',
-		logo: '<:bz_logo:1345027059327438848>',
 	},
 	science: {
-		column: 'event_science_count',
+		column: 'event_kotk_science_kills',
 		display: 'Science Team',
-		logo: '<:st_logo:1345027109944299562>',
 	},
 	crayon: {
-		column: 'event_crayon_count',
+		column: 'event_kotk_crayon_kills',
 		display: 'Crayon Commandos',
-		logo: '<:cc_logo:1345027134862655549>',
 	},
 	snack: {
-		column: 'event_snack_count',
+		column: 'event_kotk_snack_kills',
 		display: 'S.N.A.C.K. Division',
-		logo: '<:sd_logo:1395099109203116083>',
 	},
 };
 
 export const command = {
 	name: 'submit',
-	description: 'Submit all stratagems used per mission for your faction, or without options for your stats.',
+	description: 'Submit your mission kills for King of the Kill - Season 3.',
 	options: [
 		{
 			name: 'baldzerkers',
-			description: 'Stratagems used by the Baldzerkers division',
+			description: 'Kills scored for the Baldzerkers division',
 			type: 4, // INTEGER
 			required: false,
 			min_value: 1,
@@ -45,7 +40,7 @@ export const command = {
 		},
 		{
 			name: 'crayon',
-			description: 'Stratagems used by the Crayon Commandos division',
+			description: 'Kills scored for the Crayon Commandos division',
 			type: 4,
 			required: false,
 			min_value: 1,
@@ -53,7 +48,7 @@ export const command = {
 		},
 		{
 			name: 'diaper',
-			description: 'Stratagems used by the Diaper Division',
+			description: 'Kills scored for the Diaper Division',
 			type: 4,
 			required: false,
 			min_value: 1,
@@ -61,7 +56,7 @@ export const command = {
 		},
 		{
 			name: 'science',
-			description: 'Stratagems used by the Science Team division',
+			description: 'Kills scored for the Science Team division',
 			type: 4,
 			required: false,
 			min_value: 1,
@@ -69,7 +64,7 @@ export const command = {
 		},
 		{
 			name: 'snack',
-			description: 'Stratagems used by the S.N.A.C.K. Division',
+			description: 'Kills scored for the S.N.A.C.K. Division',
 			type: 4,
 			required: false,
 			min_value: 1,
@@ -81,28 +76,42 @@ export const command = {
 function parseSubmission(options) {
 	const provided = Object.entries(options).filter(([, value]) => value !== undefined && value !== null);
 
+	if (provided.length === 0) {
+		return { error: 'Please submit kills for exactly one division.' };
+	}
+
 	if (provided.length > 1) {
 		return {
 			error: 'Only one division can be submitted at a time. Please submit separately.',
 		};
 	}
 
-	const [divisionKey, stratagems] = provided[0];
+	const [divisionKey, killsRaw] = provided[0];
 	const division = DIVISIONS[divisionKey];
 	if (!division) {
 		return { error: 'Unknown division selected.' };
 	}
 
-	const count = Number(stratagems);
+	const kills = Number(killsRaw);
+	// kills are prevalidated by discord as INT 1-3000
+	/*
+	if (kills <= 0) {
+	if (!Number.isFinite(kills) || Number.isNaN(kills)) {
+		return { error: 'Invalid kill count. Provide a positive number (max 3000).' };
+	}
 
-	if (count >= MAX_SUBMISSION) {
+		return { error: 'Kill count must be greater than zero.' };
+	}
+	*/
+
+	if (kills >= 3000) {
 		return {
 			error:
-				'Submission count exceptionally high, congratulations! Please submit a screenshot to the mods first, so they can verify your results and add them manually.',
+				'Kill count exceptionally high for a single Helldiver during one mission, congratulations! Please submit a screenshot to the mods first, so they can verify your results and add them manually.',
 		};
 	}
 
-	return { division, stratagems };
+	return { division, kills };
 }
 
 function parseOptions(interaction) {
@@ -121,7 +130,7 @@ async function countRecentSubmissions(db, eventKey, user) {
 		.first();
 	return res ? Number(res.cnt) : 0;
 }
-
+/*
 async function getUserSubmissions(db, eventKey, userId) {
 	const res = await db
 		.prepare(
@@ -170,7 +179,7 @@ function formatSubmissionSummary(rows) {
 		`Overall: ${formatNumber(overall)}`,
 	].join('\n');
 }
-
+*/
 async function getUserTotals(db, eventKey, userId, column) {
 	const sql = `SELECT SUM(${column}) AS total FROM submissions WHERE event_key = ? AND user = ?;`;
 	const res = await db.prepare(sql).bind(eventKey, userId).first();
@@ -201,6 +210,9 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const options = parseOptions(interaction);
+	const { division, kills, error } = parseSubmission(options);
+	/*
+	// RETURN USER SUBMISSIONS WHEN NO ARGUMENT IS GIVEN
 	const provided = Object.values(options).filter((value) => value !== undefined && value !== null);
 	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 
@@ -223,6 +235,8 @@ export async function handler(interaction, env, ctx) {
 	}
 
 	const { division, stratagems, error } = parseSubmission(options);
+*/
+
 	if (error) {
 		return Response.json({
 			type: 4,
@@ -230,8 +244,10 @@ export async function handler(interaction, env, ctx) {
 		});
 	}
 
+	const userId = BigInt(interaction.member?.user?.id || interaction.user?.id || 0).toString();
 	const username = interaction.member?.user?.username || interaction.user?.username || '';
 
+	// Disabled for lower CPU usage
 	/*
 	try {
 		const count = await countRecentSubmissions(env.STATISTICS_DB, eventKey, userId);
@@ -247,11 +263,11 @@ export async function handler(interaction, env, ctx) {
 	} catch (err) {
 		console.error('Error checking submission rate limit', err);
 	}
-	*/
+	 */
 
 	const now = new Date().toISOString();
 	const columns = ['user', 'name', 'date', 'event_key', division.column];
-	const values = [userId, username, now, eventKey, stratagems];
+	const values = [userId, username, now, eventKey, kills];
 
 	try {
 		const placeholders = columns.map(() => '?').join(', ');
@@ -273,7 +289,7 @@ export async function handler(interaction, env, ctx) {
 		console.error('Error reading user totals', err);
 	}
 
-	const message = `<@${userId}> reported **${formatNumber(stratagems)} stratagems used** for **${division.display}**. Thank you for your support!\nTotal contribution: ${formatNumber(totals)}`;
+	const message = `<@${userId}> submitted **${formatNumber(kills)} kills** to **${division.display}**. Thank you for your support!\nTotal contribution: ${formatNumber(totals)}`;
 
 	return Response.json({
 		type: 4,
