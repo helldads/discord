@@ -13,6 +13,7 @@ The bot currently implements the following slash commands:
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
 - `/event` – Display the current event and statistics.
 - `/submit` – Submit your mission results for the current community event.
+- `/build` – Get a random Helldivers build or quickly link a specific build.
 
 TEMPORARILY DISABLED
 - `/update` – Update your game statistics for the highscores.

@@ -1,0 +1,37 @@
+const buildData = [
+	['Paladin Build', 'paladin-build'],
+	['Fallout Build', 'fallout-build'],
+	['Smoke Walker Build', 'smoke-walker-build'],
+	['Dead Silent Build', 'dead-silent-build'],
+	['Mission Impossible Build', 'mission-impossible-build'],
+	['Spellsword Build', 'spellsword-build'],
+	['HellDads Anniversary Celebration Build', 'anniversary-celebration-build'],
+	['3 Sword Style Build', '3-sword-style-build'],
+	['Judge Dredd Build', 'judge-dredd-build'],
+	['Squid Slayer Build', 'squid-slayer-build'],
+	['The Exterminator Build', 'exterminator-build'],
+	['Summoner Build', 'summoner-build'],
+	['Air Traffic Controller Build', 'air-traffic-controller-build'],
+	['Anti Predator Strain Build', 'anti-predator-strain-build'],
+	['Reinhardt Build', 'reinhardt-build'],
+	['Space Cowboy Build', 'space-cowboy-build'],
+	['The Expendables Build', 'expendables-build'],
+	['The Elementalist Build', 'elementalist-build'],
+	['Demolitionist Build', 'demolitionist-build'],
+	['Mech Driver Build', 'mech-driver-build'],
+	['The Sniper Build', 'sniper-build'],
+	['Spartan Build', 'spartan-build'],
+	['Heavy Gunner Build', 'heavy-gunner-build'],
+	['Laser Pointer Build', 'laser-pointer-build'],
+	['Emplacement Jockey Build', 'emplacement-jockey-build'],
+	['DOOM SLAYER Build', 'doom-slayer-build'],
+	['40mm of Freedom Build', '40mm-of-freedom-build'],
+	['Gas Walker Build', 'gas-walker-build'],
+	['Ghost Build', 'ghost-build'],
+	['Baby Driver Build', 'baby-driver-build'],
+];
+
+export const builds = buildData.map(([name, slug]) => ({
+	name,
+	slug
+}));

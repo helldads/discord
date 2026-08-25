@@ -14,6 +14,8 @@ import { handler as modhelpHandler } from '../src/commands/modhelp.js';
 import { handler as submitHandler } from '../src/commands/submit.js';
 //import { handler as updateHandler } from '../src/commands/update.js';
 import { handler as eventHandler } from '../src/commands/event.js';
+import { autocomplete as buildAutocomplete, handler as buildHandler } from '../src/commands/build.js';
+import { builds } from '../src/data/builds.js';
 import { buildChannelName, buildConfirmationMessage, handler as lfgHandler, isValidSlug } from '../src/commands/lfg.js';
 import { getTimestampFromSnowflake } from '../src/lib/snowflake.js';
 
@@ -102,6 +104,53 @@ test('All commands export a valid declaration object', async () => {
 			assert.ok(Array.isArray(command.options), `Command ${file} 'options' must be an array if present`);
 		}
 	}
+});
+
+test('build command returns a random public build and mentions the user', async () => {
+	const env = { HELLDADS_BUILDS_URL: 'https://www.helldads.org/builds' };
+
+	const originalRandom = Math.random;
+	Math.random = () => 0;
+	try {
+		const res = await buildHandler({ data: { options: [] }, member: { user: { id: '123' } } }, env, {});
+		const body = await res.json();
+		assert.equal(body.type, 4);
+		assert.match(body.data.content, /<@123> rolled a random Helldads build/);
+		assert.match(body.data.content, new RegExp(builds[0].url));
+		assert.equal(body.data.flags, undefined);
+	} finally {
+		Math.random = originalRandom;
+	}
+});
+
+test('build command returns a requested build privately', async () => {
+	const env = { HELLDADS_BUILDS_URL: 'https://www.helldads.org/builds' };
+	const chosen = builds.find((build) => build.slug === 'doom-slayer-build');
+	const interaction = {
+		data: { options: [{ name: 'name', value: chosen.slug }, { name: 'private', value: true }] },
+		member: { user: { id: '456' } },
+	};
+	const body = await (await buildHandler(interaction, env, {})).json();
+	assert.match(body.data.content, new RegExp(`<@456> requested the ${chosen.name}`));
+	assert.match(body.data.content, new RegExp(chosen.url));
+	assert.equal(body.data.flags, 64);
+});
+
+test('build autocomplete filters names and limits Discord choices', async () => {
+	const interaction = { data: { options: [{ name: 'name', value: 'walker', focused: true }] } };
+	const body = await (await buildAutocomplete(interaction)).json();
+	assert.deepEqual(body.data.choices, [
+		{ name: 'Smoke Walker Build', value: 'smoke-walker-build' },
+		{ name: 'Gas Walker Build', value: 'gas-walker-build' },
+	]);
+	assert.ok(body.data.choices.length <= 25);
+});
+
+test('build command rejects a stale build selection', async () => {
+	const interaction = { data: { options: [{ name: 'name', value: 'retired-build' }] }, user: { id: '789' } };
+	const body = await (await buildHandler(interaction)).json();
+	assert.equal(body.data.flags, 64);
+	assert.match(body.data.content, /no longer available/);
 });
 
 test('helloworld command works', async () => {

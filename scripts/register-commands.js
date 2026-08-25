@@ -10,6 +10,7 @@ import * as submit from '../src/commands/submit.js';
 //import * as update from '../src/commands/update.js';
 //import * as highscores from '../src/commands/highscores.js';
 import * as event from '../src/commands/event.js';
+import * as build from '../src/commands/build.js';
 
 const commands = [
 	stats.command,
@@ -21,6 +22,7 @@ const commands = [
 	//update.command,
 	//highscores.command,
 	event.command,
+	build.command,
 ];
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;

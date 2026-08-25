@@ -11,6 +11,7 @@ const commandImporters = {
 	update: () => import('./commands/update.js'),
 	highscores: () => import('./commands/highscores.js'),
 	event: () => import('./commands/event.js'),
+	build: () => import('./commands/build.js'),
 };
 
 const scheduledImporters = {
@@ -28,6 +29,19 @@ async function getCommandHandler(name) {
 		return module.handler;
 	} catch (err) {
 		console.error(`Failed to load handler for command "${name}"`, err);
+		return null;
+	}
+}
+
+async function getAutocompleteHandler(name) {
+	const importer = commandImporters[name];
+	if (!importer) return null;
+
+	try {
+		const module = await importer();
+		return module.autocomplete;
+	} catch (err) {
+		console.error(`Failed to load autocomplete handler for command "${name}"`, err);
 		return null;
 	}
 }
@@ -88,6 +102,12 @@ export default {
 					data: { content: 'Command not found.' },
 				});
 			}
+		}
+
+		// Handle slash command autocomplete
+		if (interaction.type === 4) {
+			const autocomplete = await getAutocompleteHandler(interaction.data.name);
+			return autocomplete ? autocomplete(interaction) : Response.json({ type: 8, data: { choices: [] } });
 		}
 
 		return new Response('Unhandled request', { status: 400 });
