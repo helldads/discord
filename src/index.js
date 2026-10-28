@@ -5,6 +5,7 @@ const commandImporters = {
 	stats: () => import('./commands/stats.js'),
 	quote: () => import('./commands/quote.js'),
 	modhelp: () => import('./commands/modhelp.js'),
+	reeducate: () => import('./commands/reeducate.js'),
 	help: () => import('./commands/help.js'),
 	lfg: () => import('./commands/lfg.js'),
 	submit: () => import('./commands/submit.js'),
@@ -109,6 +110,11 @@ export default {
 			const autocomplete = await getAutocompleteHandler(interaction.data.name);
 			return autocomplete ? autocomplete(interaction) : Response.json({ type: 8, data: { choices: [] } });
 		}
+
+        if ((interaction.type === 3 || interaction.type === 5) && interaction.data?.custom_id?.startsWith('reeducate:')) {
+            const module = await import('./commands/reeducate.js');
+            return interaction.type === 3 ? module.onButton(interaction, env, ctx) : module.onModal(interaction, env, ctx);
+        }
 
 		return new Response('Unhandled request', { status: 400 });
 	},
