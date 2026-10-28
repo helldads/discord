@@ -79,7 +79,10 @@ async function processReport(i,env,target,origin,reason){
   let record=await dbCase(env,target);
   let created=false;
   let channel=record?.channel_id;
-  if(channel){try{await discord(env,'/channels/'+channel)}catch{channel=null}}
+  if(channel){try{await discord(env,'/channels/'+channel)}catch{
+    const old=channel;channel=null;
+    await db.prepare("UPDATE dissident_cases SET channel_id=NULL WHERE guild_id=? AND target_id=? AND channel_id=?").bind(env.DISCORD_GUILD_ID,target,old).run();
+  }}
   if(!channel){
    // Atomically claim creation. An existing record may be refreshed if the channel was deleted.
    const claim=await db.prepare("INSERT INTO dissident_cases(guild_id,target_id,channel_id,first_reporter_id,status,updated_at) VALUES (?,?,NULL,?,'creating',?) ON CONFLICT(guild_id,target_id) DO UPDATE SET channel_id=NULL, first_reporter_id=excluded.first_reporter_id,status='creating',updated_at=excluded.updated_at WHERE dissident_cases.status='closed' OR (dissident_cases.status='creating' AND dissident_cases.updated_at<?) OR (dissident_cases.status='open' AND (dissident_cases.channel_id IS NULL OR dissident_cases.channel_id=''))").bind(env.DISCORD_GUILD_ID,target,reporter,now,now-120000).run();
@@ -99,7 +102,7 @@ async function processReport(i,env,target,origin,reason){
    }
   }
   const first=created;
-  if(trusted)await channelAccess(env,channel,reporter);
+  if(trusted && !created)await channelAccess(env,channel,reporter);
   await post(env,channel,reportPayload(env,reporter,target,origin,reason));
   let status='';
   if(trusted){
