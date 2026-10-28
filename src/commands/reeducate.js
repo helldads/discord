@@ -54,7 +54,7 @@ export function handler(i) {
  if(!i.guild_id||!/^\d{17,20}$/.test(target||''))return ephemeral('Please select a server member.');
  return Response.json({type:9,data:{title:'Report a Dissident',custom_id:'reeducate:submit:'+target+':'+i.channel_id,components:[
   {type:1,components:[{type:4,custom_id:'reason',label:'Reason for report',style:2,required:true,min_length:5,max_length:1000}]},
-  {type:1,components:[{type:4,custom_id:'ack',label:'Type I UNDERSTAND to confirm',style:1,required:true,min_length:12,max_length:12}]}
+  {type:1,components:[{type:4,custom_id:'ack',label:'Misuse risks reeducation: I UNDERSTAND',style:1,required:true,min_length:12,max_length:12}]}
  ]}});
 }
 export function onModal(i,env,ctx) {
@@ -77,11 +77,12 @@ async function processReport(i,env,target,origin,reason){
    reserved=true;
   }
   let record=await dbCase(env,target);
+  let created=false;
   let channel=record?.channel_id;
   if(channel){try{await discord(env,'/channels/'+channel)}catch{channel=null}}
   if(!channel){
    // Atomically claim creation. An existing record may be refreshed if the channel was deleted.
-   const claim=await db.prepare("INSERT INTO dissident_cases(guild_id,target_id,channel_id,first_reporter_id,status,updated_at) VALUES (?,?,NULL,?,'creating',?) ON CONFLICT(guild_id,target_id) DO UPDATE SET channel_id=NULL, first_reporter_id=excluded.first_reporter_id,status='creating',updated_at=excluded.updated_at WHERE dissident_cases.status='closed' OR (dissident_cases.status='creating' AND dissident_cases.updated_at<?) OR (dissident_cases.status='open' AND dissident_cases.channel_id IS NULL)").bind(env.DISCORD_GUILD_ID,target,reporter,now,now-120000).run();
+   const claim=await db.prepare("INSERT INTO dissident_cases(guild_id,target_id,channel_id,first_reporter_id,status,updated_at) VALUES (?,?,NULL,?,'creating',?) ON CONFLICT(guild_id,target_id) DO UPDATE SET channel_id=NULL, first_reporter_id=excluded.first_reporter_id,status='creating',updated_at=excluded.updated_at WHERE dissident_cases.status='closed' OR (dissident_cases.status='creating' AND dissident_cases.updated_at<?) OR (dissident_cases.status='open' AND (dissident_cases.channel_id IS NULL OR dissident_cases.channel_id=''))").bind(env.DISCORD_GUILD_ID,target,reporter,now,now-120000).run();
    if(claim.meta?.changes){
     const c=await discord(env,'/guilds/'+env.DISCORD_GUILD_ID+'/channels','POST',{
      type:0,parent_id:env.DISCORD_SUPPORT_CATEGORY_ID,topic:'Dissident case target ID: '+target,
@@ -89,6 +90,7 @@ async function processReport(i,env,target,origin,reason){
      permission_overwrites:overwrites(env,reporter)
     });
     channel=c.id;
+    created=true;
     await db.prepare("UPDATE dissident_cases SET channel_id=?,status='open',updated_at=? WHERE guild_id=? AND target_id=? AND status='creating'").bind(channel,now,env.DISCORD_GUILD_ID,target).run();
    } else {
     // A parallel submission owns creation. Wait briefly for its case to become ready.
@@ -96,7 +98,7 @@ async function processReport(i,env,target,origin,reason){
     if(!channel)throw new Error('A report is being created right now. Please try again shortly.');
    }
   }
-  const first=!(record?.channel_id)&&!!channel;
+  const first=created;
   if(trusted)await channelAccess(env,channel,reporter);
   await post(env,channel,reportPayload(env,reporter,target,origin,reason));
   let status='';
@@ -105,7 +107,7 @@ async function processReport(i,env,target,origin,reason){
     await log(env,channel,'<@'+reporter+'> '+(status==='already'?'confirmed the Dissident role was already assigned to ':'assigned the Dissident role to ')+'<@'+target+'>.');
    }catch(err){status='failed';console.error('Role assignment failed',err);await log(env,channel,'Automatic Dissident role assignment failed for <@'+target+'>. Moderator action required.')}
   }
-  await ack(env,i,'Thank you. '+(record?.channel_id?'This member has already been reported. ':'Your report was received. ')+
+  await ack(env,i,'Thank you. '+(!created?'This member has already been reported. ':'Your report was received. ')+
    (trusted||first?'Case: <#'+channel+'>. ':'A moderator will reach out if needed. ')+
    (status==='assigned'?'Dissident role assigned.':status==='already'?'Dissident role was already present.':status==='failed'?'Automatic role assignment failed; moderators were notified.':''));
  }catch(err){
