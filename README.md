@@ -9,6 +9,7 @@ The bot currently implements the following slash commands:
 - `/help` – Display an overview of commands and useful channels.
 - `/lfg` – Find friends by submit a looking for group request
 - `/modhelp` – Open a private support channel and ping the mods.
+- `/reeducate` – Privately report a rule violation; trusted members may apply the Dissident role, and moderators can approve reports.
 - `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
 - `/event` – Display the current event and statistics.
