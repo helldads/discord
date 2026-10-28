@@ -78,7 +78,7 @@ async function processReport(i,env,target,origin,reason){
   }
   let record=await dbCase(env,target);
   let created=false;
-  let channel=record?.channel_id;
+  let channel=record?.status==='open'?record?.channel_id:null;
   if(channel){try{await discord(env,'/channels/'+channel)}catch{
     const old=channel;channel=null;
     await db.prepare("UPDATE dissident_cases SET channel_id=NULL WHERE guild_id=? AND target_id=? AND channel_id=?").bind(env.DISCORD_GUILD_ID,target,old).run();
