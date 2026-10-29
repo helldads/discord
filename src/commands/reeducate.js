@@ -49,9 +49,9 @@ async function checkTarget(env, targetId, reporterId) {
 		guildMember(env, targetId).catch(() => null),
 		discord(env, '/guilds/' + env.DISCORD_GUILD_ID),
 	]);
-	if (!target) throw new Error('This member could not be found.');
+	if (!target) throw new Error('This user could not be found.');
 	if (target.user?.bot || targetId === guild.owner_id || hasRole(target, roleList(env))) {
-		throw new Error('This member cannot be targeted by this command.');
+		throw new Error('This member is protected by the Ministry of Truth. Please use /modhelp instead.');
 	}
 	return target;
 }
@@ -114,7 +114,7 @@ async function updateReply(interaction, env, content) {
 
 export function handler(interaction) {
 	const targetId = interaction.data.options?.find((option) => option.name === 'user')?.value;
-	if (!interaction.guild_id || !/^\d{17,20}$/.test(targetId || '')) return reply('Select a server member.');
+	if (!interaction.guild_id || !/^\d{17,20}$/.test(targetId || '')) return reply('Select a community member.');
 
 	return Response.json({ type: 9, data: {
 		title: 'Report a Dissident',
@@ -206,7 +206,7 @@ async function submitReport(interaction, env, targetId, sourceId, reason) {
 		}
 
 		const message = existing
-			? 'Thank you. This member has already been reported.'
+			? 'Thank you. This dissident has already been reported.'
 			: 'Thank you. Your report has been received.';
 		const access = !existing || trusted
 			? ' Case channel: <#' + channel.id + '>.'
