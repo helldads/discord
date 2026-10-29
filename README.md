@@ -9,6 +9,7 @@ The bot currently implements the following slash commands:
 - `/help` – Display an overview of commands and useful channels.
 - `/lfg` – Find friends by submit a looking for group request
 - `/modhelp` – Open a private support channel and ping the mods.
+- `/reeducate` – Privately report a rule violation; trusted members may apply the Dissident role, and moderators can approve reports.
 - `/quote` – Get a democratic Helldivers quote.
 - `/stats` – Display community statistics gathered from HellDads services with formatted numbers.
 - `/event` – Display the current event and statistics.
@@ -48,6 +49,8 @@ The following environment variables must be provided:
 - `DISCORD_SUPPORT_CATEGORY_ID` – ID of the category where support channels or threads will be created.
 - `DISCORD_LFG_CATEGORY_ID` – ID of the category where LFG voice channels should be created.
 - `DISCORD_TOKEN` – Bot token used for authentication.
+- `DISCORD_DISSIDENT_ROLE_ID`, `DISCORD_MODEL_CITIZEN_ROLE_ID`, `DISCORD_ADMIN_ROLE_ID`, `DISCORD_DEMOCRACY_OFFICER_ROLE_ID` – Existing community moderation roles.
+- `DISCORD_REEDUCATION_CHANNEL_ID` – Existing reeducation channel.
 - `HELLDADS_STATS_URL` – URL to the JSON with community stats.
 
 See `.env.example` and `.dev.vars.example` for example values.

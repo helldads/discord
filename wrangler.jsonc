@@ -23,9 +23,6 @@
 			}
 		]
 	},*/
-	"observability": {
-		"enabled": true,
-	},
 	"triggers": {
 		"crons": [
 			"0 17 * * *", // daily quote
@@ -60,6 +57,11 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
 	"vars": {
+		"DISCORD_ADMIN_ROLE_ID": "1301469451660693504",
+		"DISCORD_DEMOCRACY_OFFICER_ROLE_ID": "1362813879608017018",
+		"DISCORD_MODEL_CITIZEN_ROLE_ID": "1466155266989887763",
+		"DISCORD_DISSIDENT_ROLE_ID": "1466058797473726570",
+		"DISCORD_REEDUCATION_CHANNEL_ID": "1528666252082544770",
 		"HELLDADS_CODE_OF_CONDUCT": "https://www.helldads.org/code-of-conduct",
 		"HELLDADS_CURRENT_EVENT_KEY": "kotks3",
 		"HELLDADS_CURRENT_EVENT_END": "2026-04-27T12:00:00.999Z",

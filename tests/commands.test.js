@@ -11,6 +11,7 @@ import { handler as quoteHandler } from '../src/commands/quote.js';
 import { handler as statsHandler } from '../src/commands/stats.js';
 //import { handler as highscoresHandler } from '../src/commands/highscores.js';
 import { handler as modhelpHandler } from '../src/commands/modhelp.js';
+import { handler as reeducateHandler, onModal as reeducateModal, onButton as reeducateButton, findCase, isCoolingDown, recentlyReported } from '../src/commands/reeducate.js';
 import { handler as submitHandler } from '../src/commands/submit.js';
 //import { handler as updateHandler } from '../src/commands/update.js';
 import { handler as eventHandler } from '../src/commands/event.js';
@@ -648,4 +649,157 @@ test('event command aggregates event results', async () => {
 	assert.ok(json.data.content.includes('<:xdad:1419602524545093692> Highest result per submission: <@99> with 1,200 kills'));
 	assert.ok(json.data.content.includes('**Time left**:'));
 	assert.ok(json.data.content.includes('Use `/submit` to contribute your kill count'));
+});
+
+
+test('reeducate command opens a confirmation modal', async () => {
+	const interaction = {
+		guild_id: '987654321098765432',
+		channel_id: '111111111111111111',
+		data: { options: [{ name: 'user', value: '123456789012345678' }] },
+	};
+	const response = await reeducateHandler(interaction);
+	const json = await response.json();
+	assert.equal(json.type, 9);
+	assert.equal(json.data.components.length, 2);
+	assert.match(json.data.custom_id, /reeducate:submit/);
+});
+
+test('reeducate rejects modal without acknowledgement', async () => {
+	const interaction = {
+		guild_id: '987654321098765432',
+		data: {
+			custom_id: 'reeducate:submit:123456789012345678:111111111111111111',
+			components: [
+				{ components: [{ custom_id: 'reason', value: 'Unwanted advertisement' }] },
+				{ components: [{ custom_id: 'ack', value: 'no' }] },
+			],
+		},
+	};
+	const response = await reeducateModal(interaction,
+		{ DISCORD_GUILD_ID: interaction.guild_id }, { waitUntil() { assert.fail('unexpected work'); } });
+	const json = await response.json();
+	assert.equal(json.type, 4);
+	assert.equal(json.data.flags, 64);
+});
+
+test('reeducate finds cases and uses existing channel timestamps', () => {
+	const env = { DISCORD_SUPPORT_CATEGORY_ID: 'support' };
+	const now = Date.now();
+	const channels = [
+		{
+			id: buildSnowflake(now - 60_000),
+			type: 0,
+			parent_id: 'support',
+			name: 'dissident-scammer-123456789012345678',
+			topic: 'target:123456789012345678 reporter:222222222222222222',
+		},
+		{
+			id: buildSnowflake(now - 3_600_000),
+			type: 0,
+			parent_id: 'support',
+			name: 'dissident-older-345678901234567890',
+			topic: 'target:345678901234567890 reporter:333333333333333333',
+		},
+	];
+	assert.equal(findCase(channels, env, '123456789012345678'), channels[0]);
+	assert.equal(findCase(channels, env, '111111111111111111'), undefined);
+	assert.equal(isCoolingDown(channels, env, '222222222222222222', now), true);
+	assert.equal(isCoolingDown(channels, env, '333333333333333333', now), false);
+	assert.equal(isCoolingDown(channels, env, '444444444444444444', now), false);
+});
+
+test('reeducate rejects moderator action outside an active case', async () => {
+	const originalFetch = globalThis.fetch;
+	const calls = [];
+	globalThis.fetch = async (url) => {
+		calls.push(url);
+		if (url.endsWith('/members/222222222222222222')) {
+			return Response.json({ roles: ['1301288702470918267'] });
+		}
+		return Response.json({ id: '999999999999999999', type: 0,
+			parent_id: 'wrong-category', name: 'general' });
+	};
+	try {
+		const interaction = {
+			guild_id: '987654321098765432',
+			channel_id: '999999999999999999',
+			member: { user: { id: '222222222222222222' } },
+			data: { custom_id: 'reeducate:approve:123456789012345678' },
+		};
+		const response = await reeducateButton(interaction, {
+			DISCORD_GUILD_ID: interaction.guild_id,
+			DISCORD_MODS_ROLE_ID: '1301288702470918267',
+			DISCORD_SUPPORT_CATEGORY_ID: 'support',
+			DISCORD_TOKEN: 'test',
+		}, { waitUntil() { assert.fail('unexpected work'); } });
+		const json = await response.json();
+		assert.equal(json.type, 4);
+		assert.match(json.data.content, /no longer active/i);
+		assert.equal(calls.length, 2);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
+
+test('reeducate recognizes recent reports in an existing case', () => {
+	const now = Date.now();
+	const reporterId = '222222222222222222';
+	const messages = [
+		{ id: buildSnowflake(now - 60_000),
+			content: '<@&mod> New dissident report from <@' + reporterId + '> in <#general> about <@target>:\nSpam' },
+		{ id: buildSnowflake(now - 3_600_000),
+			content: '<@&mod> New dissident report from <@333333333333333333> in <#general> about <@target>:\nSpam' },
+	];
+	assert.equal(recentlyReported(messages, reporterId, now), true);
+	assert.equal(recentlyReported(messages, '333333333333333333', now), false);
+});
+
+
+test('reeducate explains when a target is protected', async () => {
+	const originalFetch = globalThis.fetch;
+	const calls = [];
+	const env = {
+		DISCORD_TOKEN: 'test',
+		DISCORD_GUILD_ID: '987654321098765432',
+		DISCORD_SUPPORT_CATEGORY_ID: 'support',
+		DISCORD_MODS_ROLE_ID: '1301288702470918267',
+		DISCORD_ADMIN_ROLE_ID: '1301469451660693504',
+		DISCORD_APPLICATION_ID: '111111111111111111',
+	};
+	globalThis.fetch = async (url, options = {}) => {
+		calls.push({ url, options });
+		if (url.includes('/members/222222222222222222')) return Response.json({ user: { id: '222222222222222222' }, roles: [] });
+		if (url.includes('/members/123456789012345678')) return Response.json({
+			user: { id: '123456789012345678', username: 'protected' }, roles: [env.DISCORD_ADMIN_ROLE_ID],
+		});
+		if (url.endsWith('/guilds/' + env.DISCORD_GUILD_ID)) return Response.json({ owner_id: '444444444444444444' });
+		if (url.endsWith('/channels')) return Response.json([]);
+		return Response.json({ id: 'response' });
+	};
+	try {
+		const interaction = {
+			guild_id: env.DISCORD_GUILD_ID,
+			channel_id: '333333333333333333',
+			token: 'interaction-token',
+			member: { user: { id: '222222222222222222' } },
+			data: {
+				custom_id: 'reeducate:submit:123456789012345678:333333333333333333',
+				components: [
+					{ components: [{ custom_id: 'reason', value: 'Test reason' }] },
+					{ components: [{ custom_id: 'ack', value: 'I UNDERSTAND' }] },
+				],
+			},
+		};
+		const tasks = [];
+		const response = await reeducateModal(interaction, env, { waitUntil(promise) { tasks.push(promise); } });
+		assert.equal((await response.json()).type, 5);
+		await Promise.all(tasks);
+		const patch = calls.find((call) => call.options.method === 'PATCH');
+		assert.match(JSON.parse(patch.options.body).content, /protected by the Ministry of Truth/);
+		assert.equal(calls.some((call) => call.options.method === 'POST'), false);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
 });

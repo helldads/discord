@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import * as stats from '../src/commands/stats.js';
 import * as quote from '../src/commands/quote.js';
 import * as modHelp from '../src/commands/modhelp.js';
+import * as reeducate from '../src/commands/reeducate.js';
 import * as help from '../src/commands/help.js';
 import * as lfg from '../src/commands/lfg.js';
 import * as submit from '../src/commands/submit.js';
@@ -16,6 +17,7 @@ const commands = [
 	stats.command,
 	quote.command,
 	modHelp.command,
+	reeducate.command,
 	help.command,
 	lfg.command,
 	submit.command,
