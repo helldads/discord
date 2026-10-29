@@ -7,9 +7,9 @@ const COOLDOWN_MS = 30 * 60 * 1000;
 
 export const command = {
 	name: 'reeducate',
-	description: 'Privately report a suspected rule violation to the moderators',
+	description: 'Privately report dissident behavior to the moderators',
 	options: [
-		{ name: 'user', description: 'Member to report', type: 6, required: true },
+		{ name: 'user', description: 'Dissident to report', type: 6, required: true },
 	],
 };
 
