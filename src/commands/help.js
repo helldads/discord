@@ -20,7 +20,7 @@ export async function handler(interaction, env, ctx) {
 		'',
 		'This bot also supports helpful commands:',
 		'• `/modhelp` – Open a private support channel with the mods.',
-		'• `/reeducate` – Privately report a suspected rule violation.',
+		'• `/reeducate` – Privately report dissident behavior.',
 		'• `/lfg` – Find friends by submitting a looking for group request.',
 		'• `/build` – Get a random Helldivers loadout recommended.',
 		'• `/quote` – Get a democratic Helldivers quote.',
