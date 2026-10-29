@@ -755,3 +755,51 @@ test('reeducate recognizes recent reports in an existing case', () => {
 	assert.equal(recentlyReported(messages, reporterId, now), true);
 	assert.equal(recentlyReported(messages, '333333333333333333', now), false);
 });
+
+
+test('reeducate explains when a target is protected', async () => {
+	const originalFetch = globalThis.fetch;
+	const calls = [];
+	const env = {
+		DISCORD_TOKEN: 'test',
+		DISCORD_GUILD_ID: '987654321098765432',
+		DISCORD_SUPPORT_CATEGORY_ID: 'support',
+		DISCORD_MODS_ROLE_ID: '1301288702470918267',
+		DISCORD_ADMIN_ROLE_ID: '1301469451660693504',
+		DISCORD_APPLICATION_ID: '111111111111111111',
+	};
+	globalThis.fetch = async (url, options = {}) => {
+		calls.push({ url, options });
+		if (url.includes('/members/222222222222222222')) return Response.json({ user: { id: '222222222222222222' }, roles: [] });
+		if (url.includes('/members/123456789012345678')) return Response.json({
+			user: { id: '123456789012345678', username: 'protected' }, roles: [env.DISCORD_ADMIN_ROLE_ID],
+		});
+		if (url.endsWith('/guilds/' + env.DISCORD_GUILD_ID)) return Response.json({ owner_id: '444444444444444444' });
+		if (url.endsWith('/channels')) return Response.json([]);
+		return Response.json({ id: 'response' });
+	};
+	try {
+		const interaction = {
+			guild_id: env.DISCORD_GUILD_ID,
+			channel_id: '333333333333333333',
+			token: 'interaction-token',
+			member: { user: { id: '222222222222222222' } },
+			data: {
+				custom_id: 'reeducate:submit:123456789012345678:333333333333333333',
+				components: [
+					{ components: [{ custom_id: 'reason', value: 'Test reason' }] },
+					{ components: [{ custom_id: 'ack', value: 'I UNDERSTAND' }] },
+				],
+			},
+		};
+		const tasks = [];
+		const response = await reeducateModal(interaction, env, { waitUntil(promise) { tasks.push(promise); } });
+		assert.equal((await response.json()).type, 5);
+		await Promise.all(tasks);
+		const patch = calls.find((call) => call.options.method === 'PATCH');
+		assert.match(JSON.parse(patch.options.body).content, /protected by the Ministry of Truth/);
+		assert.equal(calls.some((call) => call.options.method === 'POST'), false);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
