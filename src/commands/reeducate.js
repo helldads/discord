@@ -1,6 +1,21 @@
 import { getTimestampFromSnowflake } from '../lib/snowflake.js';
 
 const API = 'https://discord.com/api/v10';
+
+class UserError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'UserError';
+	}
+}
+
+class DiscordApiError extends Error {
+	constructor(status, path) {
+		super('Discord API ' + status + ' on ' + path);
+		this.name = 'DiscordApiError';
+		this.status = status;
+	}
+}
 const VIEW_CHANNEL = 1024;
 const SEND_MESSAGES = 2048;
 const COOLDOWN_MS = 30 * 60 * 1000;
@@ -36,7 +51,7 @@ async function discord(env, path, method = 'GET', payload) {
 		},
 		...(payload ? { body: JSON.stringify(payload) } : {}),
 	});
-	if (!response.ok) throw new Error('Discord API ' + response.status + ' on ' + path);
+	if (!response.ok) throw new DiscordApiError(response.status, path);
 	if (response.status === 204) return null;
 	return response.json();
 }
@@ -44,14 +59,17 @@ async function discord(env, path, method = 'GET', payload) {
 const guildMember = (env, id) => discord(env, '/guilds/' + env.DISCORD_GUILD_ID + '/members/' + id);
 
 async function checkTarget(env, targetId, reporterId) {
-	if (targetId === reporterId) throw new Error('You cannot report yourself.');
+	if (targetId === reporterId) throw new UserError('You cannot report yourself.');
 	const [target, guild] = await Promise.all([
-		guildMember(env, targetId).catch(() => null),
+		guildMember(env, targetId).catch((error) => {
+			if (error instanceof DiscordApiError && error.status === 404) return null;
+			throw error;
+		}),
 		discord(env, '/guilds/' + env.DISCORD_GUILD_ID),
 	]);
 	if (!target) throw new Error('This user could not be found.');
 	if (target.user?.bot || targetId === guild.owner_id || hasRole(target, roleList(env))) {
-		throw new Error('This member is protected by the Ministry of Truth. Please use /modhelp instead.');
+		throw new UserError('This member is protected by the Ministry of Truth. Please use /modhelp instead.');
 	}
 	return target;
 }
@@ -213,8 +231,13 @@ async function submitReport(interaction, env, targetId, sourceId, reason) {
 			: ' A moderator will reach out if needed.';
 		await updateReply(interaction, env, message + access + roleStatus);
 	} catch (error) {
-		console.error('Unable to process dissident report', error);
-		await updateReply(interaction, env, error.message === 'This member is protected by the Ministry of Truth. Please use /modhelp instead.' || error.message === 'You cannot report yourself.' || error.message === 'This member could not be found.' ? error.message : 'Unable to process your report. Please contact the moderators with /modhelp.')
+		if (!(error instanceof UserError)) {
+			console.error('Unable to process dissident report', error);
+		}
+		const message = error instanceof UserError
+			? error.message
+			: 'Unable to process your report. Please contact the moderators with /modhelp.';
+		await updateReply(interaction, env, message)
 			.catch(console.error);
 	}
 }
