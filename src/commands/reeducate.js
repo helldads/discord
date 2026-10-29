@@ -81,6 +81,12 @@ export function isCoolingDown(channels, env, reporterId, now = Date.now()) {
 		now - getTimestampFromSnowflake(channel.id) < COOLDOWN_MS);
 }
 
+export function recentlyReported(messages, reporterId, now = Date.now()) {
+	return messages.some((message) =>
+		message.content?.includes('New dissident report from <@' + reporterId + '>') &&
+		now - getTimestampFromSnowflake(message.id) < COOLDOWN_MS);
+}
+
 function permissions(env, reporterId) {
 	return [
 		{ id: env.DISCORD_GUILD_ID, type: 0, deny: VIEW_CHANNEL },
@@ -151,6 +157,15 @@ async function submitReport(interaction, env, targetId, sourceId, reason) {
 		if (!trusted && isCoolingDown(channels, env, reporterId)) {
 			await updateReply(interaction, env, 'You recently submitted a report. Please allow 30 minutes before reporting again.');
 			return;
+		}
+
+		if (channel && !trusted) {
+			const messages = await discord(env, '/channels/' + channel.id + '/messages?limit=100');
+			if (recentlyReported(messages, reporterId)) {
+				await updateReply(interaction, env,
+					'You recently submitted a report. Please allow 30 minutes before reporting again.');
+				return;
+			}
 		}
 
 		if (!channel) {
