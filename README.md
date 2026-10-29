@@ -49,6 +49,8 @@ The following environment variables must be provided:
 - `DISCORD_SUPPORT_CATEGORY_ID` – ID of the category where support channels or threads will be created.
 - `DISCORD_LFG_CATEGORY_ID` – ID of the category where LFG voice channels should be created.
 - `DISCORD_TOKEN` – Bot token used for authentication.
+- `DISCORD_DISSIDENT_ROLE_ID`, `DISCORD_MODEL_CITIZEN_ROLE_ID`, `DISCORD_ADMIN_ROLE_ID`, `DISCORD_DEMOCRACY_OFFICER_ROLE_ID` – Existing community moderation roles.
+- `DISCORD_REEDUCATION_CHANNEL_ID` – Existing reeducation channel.
 - `HELLDADS_STATS_URL` – URL to the JSON with community stats.
 
 See `.env.example` and `.dev.vars.example` for example values.
