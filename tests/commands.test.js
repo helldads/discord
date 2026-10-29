@@ -11,7 +11,7 @@ import { handler as quoteHandler } from '../src/commands/quote.js';
 import { handler as statsHandler } from '../src/commands/stats.js';
 //import { handler as highscoresHandler } from '../src/commands/highscores.js';
 import { handler as modhelpHandler } from '../src/commands/modhelp.js';
-import { handler as reeducateHandler, onModal as reeducateModal, onButton as reeducateButton, findCase, isCoolingDown } from '../src/commands/reeducate.js';
+import { handler as reeducateHandler, onModal as reeducateModal, onButton as reeducateButton, findCase, isCoolingDown, recentlyReported } from '../src/commands/reeducate.js';
 import { handler as submitHandler } from '../src/commands/submit.js';
 //import { handler as updateHandler } from '../src/commands/update.js';
 import { handler as eventHandler } from '../src/commands/event.js';
@@ -740,4 +740,18 @@ test('reeducate rejects moderator action outside an active case', async () => {
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
+});
+
+
+test('reeducate recognizes recent reports in an existing case', () => {
+	const now = Date.now();
+	const reporterId = '222222222222222222';
+	const messages = [
+		{ id: buildSnowflake(now - 60_000),
+			content: '<@&mod> New dissident report from <@' + reporterId + '> in <#general> about <@target>:\nSpam' },
+		{ id: buildSnowflake(now - 3_600_000),
+			content: '<@&mod> New dissident report from <@333333333333333333> in <#general> about <@target>:\nSpam' },
+	];
+	assert.equal(recentlyReported(messages, reporterId, now), true);
+	assert.equal(recentlyReported(messages, '333333333333333333', now), false);
 });
