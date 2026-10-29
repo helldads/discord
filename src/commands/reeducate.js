@@ -1,134 +1,244 @@
-const API = 'https://discord.com/api/v10';
-const DISSIDENT = '1466058797473726570';
-const PROTECTED = ['1301469451660693504','1301288702470918267','1362813879608017018'];
-const TRUSTED = [...PROTECTED,'1466155266989887763'];
-const HOUR = 3600000;
-const ephemeral = content => Response.json({type:4,data:{content,flags:64}});
-const deferred = () => Response.json({type:5,data:{flags:64}});
-const name = value => (value||'user').toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,28)||'user';
-const userId = i => i.member?.user?.id;
-const input = (i,key) => i.data.components?.flatMap(row=>row.components||[]).find(c=>c.custom_id===key)?.value?.trim()||'';
-export const command={name:'reeducate',description:'Privately report a member to the moderators',options:[{name:'user',description:'Member to report',type:6,required:true}]};
-export const isTrusted = roles => roles.some(r=>TRUSTED.includes(r));
-export const isProtected = roles => roles.some(r=>PROTECTED.includes(r));
+import { getTimestampFromSnowflake } from '../lib/snowflake.js';
 
-async function discord(env,path,method='GET',data) {
- const res=await fetch(API+path,{method,headers:{Authorization:'Bot '+env.DISCORD_TOKEN,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{})});
- const text=await res.text(); let value;try{value=JSON.parse(text)}catch{value=text}
- if(!res.ok)throw new Error('Discord API '+res.status+' '+path);
- return value;
+const API = 'https://discord.com/api/v10';
+const VIEW_CHANNEL = 1024;
+const SEND_MESSAGES = 2048;
+const COOLDOWN_MS = 30 * 60 * 1000;
+
+export const command = {
+	name: 'reeducate',
+	description: 'Privately report a suspected rule violation to the moderators',
+	options: [
+		{ name: 'user', description: 'Member to report', type: 6, required: true },
+	],
+};
+
+const reply = (content) => Response.json({ type: 4, data: { content, flags: 64 } });
+const defer = () => Response.json({ type: 5, data: { flags: 64 } });
+const roleList = (env) => [
+	env.DISCORD_ADMIN_ROLE_ID,
+	env.DISCORD_MODS_ROLE_ID,
+	env.DISCORD_DEMOCRACY_OFFICER_ROLE_ID,
+];
+const trustedRoles = (env) => [...roleList(env), env.DISCORD_MODEL_CITIZEN_ROLE_ID];
+const hasRole = (member, ids) => (member.roles || []).some((id) => ids.includes(id));
+const slug = (value) => (value || 'user').toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 32);
+const getInput = (interaction, id) => interaction.data.components
+	?.flatMap((row) => row.components || [])
+	.find((component) => component.custom_id === id)?.value?.trim() || '';
+
+async function discord(env, path, method = 'GET', payload) {
+	const response = await fetch(API + path, {
+		method,
+		headers: {
+			Authorization: 'Bot ' + env.DISCORD_TOKEN,
+			...(payload ? { 'Content-Type': 'application/json' } : {}),
+		},
+		...(payload ? { body: JSON.stringify(payload) } : {}),
+	});
+	if (!response.ok) throw new Error('Discord API ' + response.status + ' on ' + path);
+	if (response.status === 204) return null;
+	return response.json();
 }
-const member=(env,id)=>discord(env,'/guilds/'+env.DISCORD_GUILD_ID+'/members/'+id);
-async function targetCheck(env,targetId,actorId) {
- if(!/^\d{17,20}$/.test(targetId)||targetId===actorId)throw new Error('You cannot report yourself.');
- const [target,guild]=await Promise.all([member(env,targetId).catch(()=>null),discord(env,'/guilds/'+env.DISCORD_GUILD_ID)]);
- if(!target)throw new Error('This member is no longer on the server.');
- if(target.user?.bot||targetId===guild.owner_id||isProtected(target.roles||[]))throw new Error('This member is protected from this command.');
- return target;
+
+const guildMember = (env, id) => discord(env, '/guilds/' + env.DISCORD_GUILD_ID + '/members/' + id);
+
+async function checkTarget(env, targetId, reporterId) {
+	if (targetId === reporterId) throw new Error('You cannot report yourself.');
+	const [target, guild] = await Promise.all([
+		guildMember(env, targetId).catch(() => null),
+		discord(env, '/guilds/' + env.DISCORD_GUILD_ID),
+	]);
+	if (!target) throw new Error('This member could not be found.');
+	if (target.user?.bot || targetId === guild.owner_id || hasRole(target, roleList(env))) {
+		throw new Error('This member cannot be targeted by this command.');
+	}
+	return target;
 }
-async function addRole(env,id,actorId) {
- const target=await targetCheck(env,id,actorId);
- if((target.roles||[]).includes(DISSIDENT))return 'already';
- await discord(env,'/guilds/'+env.DISCORD_GUILD_ID+'/members/'+id+'/roles/'+DISSIDENT,'PUT');
- return 'assigned';
+
+async function addDissidentRole(env, targetId, actorId) {
+	const target = await checkTarget(env, targetId, actorId);
+	if (target.roles.includes(env.DISCORD_DISSIDENT_ROLE_ID)) return false;
+	await discord(env, '/guilds/' + env.DISCORD_GUILD_ID + '/members/' + targetId +
+		'/roles/' + env.DISCORD_DISSIDENT_ROLE_ID, 'PUT');
+	return true;
 }
-const dbCase=(env,target)=>env.STATISTICS_DB.prepare('SELECT * FROM dissident_cases WHERE guild_id=? AND target_id=?').bind(env.DISCORD_GUILD_ID,target).first();
-async function ack(env,i,msg){await discord(env,'/webhooks/'+env.DISCORD_APPLICATION_ID+'/'+i.token+'/messages/@original','PATCH',{content:msg});}
-async function post(env,id,data){return discord(env,'/channels/'+id+'/messages','POST',data)}
-async function log(env,id,msg){await post(env,id,{content:msg,allowed_mentions:{parse:[]}})}
-const channelAccess=(env,channel,id)=>discord(env,'/channels/'+channel+'/permissions/'+id,'PUT',{type:1,allow:'3072',deny:'0'});
-const button=target=>[{type:1,components:[{type:2,style:4,label:'Reeducate',custom_id:'reeducate:approve:'+target}]}];
-function reportPayload(env,who,target,origin,reason) {
- return {content:'<@&'+env.DISCORD_MODS_ROLE_ID+'> New dissident report from <@'+who+'> in <#'+origin+'> about <@'+target+'>:\n'+reason,
-  allowed_mentions:{parse:[],roles:[env.DISCORD_MODS_ROLE_ID],users:[who]},
-  components:button(target)};
+
+export function findCase(channels, env, targetId) {
+	return channels.find((channel) =>
+		channel.type === 0 &&
+		channel.parent_id === env.DISCORD_SUPPORT_CATEGORY_ID &&
+		channel.name.startsWith('dissident-') &&
+		channel.name.endsWith('-' + targetId));
 }
-function overwrites(env,reporter){return [
- {id:env.DISCORD_GUILD_ID,type:0,deny:'1024',allow:'0'},
- {id:env.DISCORD_MODS_ROLE_ID,type:0,allow:'3072',deny:'0'},
- {id:reporter,type:1,allow:'3072',deny:'0'},
- {id:env.DISCORD_APPLICATION_ID,type:1,allow:'3072',deny:'0'}
-]}
-export function handler(i) {
- const target=i.data.options?.find(x=>x.name==='user')?.value;
- if(!i.guild_id||!/^\d{17,20}$/.test(target||''))return ephemeral('Please select a server member.');
- return Response.json({type:9,data:{title:'Report a Dissident',custom_id:'reeducate:submit:'+target+':'+i.channel_id,components:[
-  {type:1,components:[{type:4,custom_id:'reason',label:'Reason for report',style:2,required:true,min_length:5,max_length:1000}]},
-  {type:1,components:[{type:4,custom_id:'ack',label:'Misuse risks reeducation: I UNDERSTAND',style:1,required:true,min_length:12,max_length:12}]}
- ]}});
+
+export function isCoolingDown(channels, env, reporterId, now = Date.now()) {
+	return channels.some((channel) =>
+		channel.type === 0 &&
+		channel.parent_id === env.DISCORD_SUPPORT_CATEGORY_ID &&
+		channel.name.startsWith('dissident-') &&
+		channel.topic?.includes('reporter:' + reporterId) &&
+		now - getTimestampFromSnowflake(channel.id) < COOLDOWN_MS);
 }
-export function onModal(i,env,ctx) {
- const [prefix,action,target,origin]=i.data.custom_id.split(':');
- if(prefix!=='reeducate'||action!=='submit'||!/^\d{17,20}$/.test(target||''))return ephemeral('Invalid report.');
- const reason=input(i,'reason');
- if(reason.length<5||input(i,'ack').toUpperCase()!=='I UNDERSTAND')return ephemeral('A reason and the words I UNDERSTAND are required. Misuse can result in your own reeducation.');
- if(i.guild_id!==env.DISCORD_GUILD_ID)return ephemeral('Wrong server.');
- ctx.waitUntil(processReport(i,env,target,origin,reason));
- return deferred();
+
+function permissions(env, reporterId) {
+	return [
+		{ id: env.DISCORD_GUILD_ID, type: 0, deny: VIEW_CHANNEL },
+		{ id: env.DISCORD_MODS_ROLE_ID, type: 0, allow: VIEW_CHANNEL | SEND_MESSAGES },
+		{ id: reporterId, type: 1, allow: VIEW_CHANNEL | SEND_MESSAGES },
+		{ id: env.DISCORD_APPLICATION_ID, type: 1, allow: VIEW_CHANNEL | SEND_MESSAGES },
+	];
 }
-async function processReport(i,env,target,origin,reason){
- const reporter=userId(i),now=Date.now(),db=env.STATISTICS_DB;let reserved=false;
- try {
-  const [who,subject]=await Promise.all([member(env,reporter),targetCheck(env,target,reporter)]);
-  const trusted=isTrusted(who.roles||[]);
-  if(!trusted){
-   const claim=await db.prepare('INSERT INTO dissident_report_cooldowns (guild_id,reporter_id,submitted_at) VALUES (?,?,?) ON CONFLICT(guild_id,reporter_id) DO UPDATE SET submitted_at=excluded.submitted_at WHERE dissident_report_cooldowns.submitted_at<=?').bind(env.DISCORD_GUILD_ID,reporter,now,now-HOUR).run();
-   if(!claim.meta?.changes)throw new Error('You may submit only one report per hour.');
-   reserved=true;
-  }
-  let record=await dbCase(env,target);
-  let created=false;
-  let channel=record?.status==='open'?record?.channel_id:null;
-  if(channel){try{await discord(env,'/channels/'+channel)}catch{
-    const old=channel;channel=null;
-    await db.prepare("UPDATE dissident_cases SET channel_id=NULL WHERE guild_id=? AND target_id=? AND channel_id=?").bind(env.DISCORD_GUILD_ID,target,old).run();
-  }}
-  if(!channel){
-   // Atomically claim creation. An existing record may be refreshed if the channel was deleted.
-   const claim=await db.prepare("INSERT INTO dissident_cases(guild_id,target_id,channel_id,first_reporter_id,status,updated_at) VALUES (?,?,NULL,?,'creating',?) ON CONFLICT(guild_id,target_id) DO UPDATE SET channel_id=NULL, first_reporter_id=excluded.first_reporter_id,status='creating',updated_at=excluded.updated_at WHERE dissident_cases.status='closed' OR (dissident_cases.status='creating' AND dissident_cases.updated_at<?) OR (dissident_cases.status='open' AND (dissident_cases.channel_id IS NULL OR dissident_cases.channel_id=''))").bind(env.DISCORD_GUILD_ID,target,reporter,now,now-120000).run();
-   if(claim.meta?.changes){
-    const c=await discord(env,'/guilds/'+env.DISCORD_GUILD_ID+'/channels','POST',{
-     type:0,parent_id:env.DISCORD_SUPPORT_CATEGORY_ID,topic:'Dissident case target ID: '+target,
-     name:('dissident-'+name(subject.user?.username)+'-reported-by-'+name(who.user?.username)).slice(0,90),
-     permission_overwrites:overwrites(env,reporter)
-    });
-    channel=c.id;
-    created=true;
-    await db.prepare("UPDATE dissident_cases SET channel_id=?,status='open',updated_at=? WHERE guild_id=? AND target_id=? AND status='creating'").bind(channel,now,env.DISCORD_GUILD_ID,target).run();
-   } else {
-    // A parallel submission owns creation. Wait briefly for its case to become ready.
-    for(let n=0;n<8;n++){await new Promise(resolve=>setTimeout(resolve,250));record=await dbCase(env,target);if(record?.status==='open'&&record.channel_id){channel=record.channel_id;break}}
-    if(!channel)throw new Error('A report is being created right now. Please try again shortly.');
-   }
-  }
-  const first=created;
-  if(trusted && !created)await channelAccess(env,channel,reporter);
-  await post(env,channel,reportPayload(env,reporter,target,origin,reason));
-  let status='';
-  if(trusted){
-   try{status=await addRole(env,target,reporter);
-    await log(env,channel,'<@'+reporter+'> '+(status==='already'?'confirmed the Dissident role was already assigned to ':'assigned the Dissident role to ')+'<@'+target+'>.');
-   }catch(err){status='failed';console.error('Role assignment failed',err);await log(env,channel,'Automatic Dissident role assignment failed for <@'+target+'>. Moderator action required.')}
-  }
-  await ack(env,i,'Thank you. '+(!created?'This member has already been reported. ':'Your report was received. ')+
-   (trusted||first?'Case: <#'+channel+'>. ':'A moderator will reach out if needed. ')+
-   (status==='assigned'?'Dissident role assigned.':status==='already'?'Dissident role was already present.':status==='failed'?'Automatic role assignment failed; moderators were notified.':''));
- }catch(err){
-  console.error('Reeducate failed',err);
-  if(reserved){await db.prepare('DELETE FROM dissident_report_cooldowns WHERE guild_id=? AND reporter_id=? AND submitted_at=?').bind(env.DISCORD_GUILD_ID,reporter,now).run().catch(()=>{});}
-  await ack(env,i,err.message.startsWith('Discord API')?'Could not complete the report. Please use /modhelp.':err.message).catch(console.error);
- }
+
+function reportMessage(env, reporterId, targetId, sourceId, reason) {
+	return {
+		content: '<@&' + env.DISCORD_MODS_ROLE_ID + '> New dissident report from <@' + reporterId +
+			'> in <#' + sourceId + '> about <@' + targetId + '>:\n' + reason,
+		allowed_mentions: { parse: [], roles: [env.DISCORD_MODS_ROLE_ID] },
+		components: [{ type: 1, components: [{
+			type: 2, style: 4, label: 'Reeducate', custom_id: 'reeducate:approve:' + targetId,
+		}] }],
+	};
 }
-export async function onButton(i,env,ctx){
- const target=i.data.custom_id.split(':')[2],actor=userId(i);
- if(!/^\d{17,20}$/.test(target||'')||i.guild_id!==env.DISCORD_GUILD_ID)return ephemeral('Invalid action.');
- const record=await dbCase(env,target);
- if(!record||record.status!=='open'||record.channel_id!==i.channel_id)return ephemeral('This button is not associated with an active case.');
- try{const who=await member(env,actor);if(!isProtected(who.roles||[]))return ephemeral('Only the moderation team may approve this report.')}
- catch{return ephemeral('Unable to verify moderator permissions.')}
- ctx.waitUntil((async()=>{
-  try{const result=await addRole(env,target,actor);await log(env,i.channel_id,'<@'+actor+'> '+(result==='already'?'confirmed the Dissident role is already on ':'assigned the Dissident role to ')+'<@'+target+'>.');await ack(env,i,result==='already'?'Dissident role is already assigned.':'Dissident role assigned.')}
-  catch(err){console.error(err);await ack(env,i,'Role assignment failed. Check target protection, bot permissions, and hierarchy.').catch(console.error)}
- })());
- return deferred();
+
+async function updateReply(interaction, env, content) {
+	await discord(env, '/webhooks/' + env.DISCORD_APPLICATION_ID + '/' +
+		interaction.token + '/messages/@original', 'PATCH', { content });
+}
+
+export function handler(interaction) {
+	const targetId = interaction.data.options?.find((option) => option.name === 'user')?.value;
+	if (!interaction.guild_id || !/^\d{17,20}$/.test(targetId || '')) return reply('Select a server member.');
+
+	return Response.json({ type: 9, data: {
+		title: 'Report a Dissident',
+		custom_id: 'reeducate:submit:' + targetId + ':' + interaction.channel_id,
+		components: [
+			{ type: 1, components: [{ type: 4, custom_id: 'reason',
+				label: 'Reason for report', style: 2, required: true, min_length: 5, max_length: 1000 }] },
+			{ type: 1, components: [{ type: 4, custom_id: 'ack',
+				label: 'Misuse risks reeducation: I UNDERSTAND',
+				style: 1, required: true, min_length: 12, max_length: 12 }] },
+		],
+	} });
+}
+
+export function onModal(interaction, env, ctx) {
+	const [prefix, action, targetId, sourceId] = interaction.data.custom_id.split(':');
+	const reason = getInput(interaction, 'reason');
+	const acknowledged = getInput(interaction, 'ack').toUpperCase() === 'I UNDERSTAND';
+	if (prefix !== 'reeducate' || action !== 'submit' || !/^\d{17,20}$/.test(targetId || '') ||
+		interaction.guild_id !== env.DISCORD_GUILD_ID) return reply('Invalid report.');
+	if (!acknowledged || reason.length < 5) {
+		return reply('Enter a reason and type I UNDERSTAND. Misuse may result in your own reeducation.');
+	}
+	ctx.waitUntil(submitReport(interaction, env, targetId, sourceId, reason));
+	return defer();
+}
+
+async function submitReport(interaction, env, targetId, sourceId, reason) {
+	const reporterId = interaction.member.user.id;
+	try {
+		const [reporter, target, channels] = await Promise.all([
+			guildMember(env, reporterId),
+			checkTarget(env, targetId, reporterId),
+			discord(env, '/guilds/' + env.DISCORD_GUILD_ID + '/channels'),
+		]);
+		const trusted = hasRole(reporter, trustedRoles(env));
+		let channel = findCase(channels, env, targetId);
+		const existing = Boolean(channel);
+
+		if (!trusted && isCoolingDown(channels, env, reporterId)) {
+			await updateReply(interaction, env, 'You recently submitted a report. Please allow 30 minutes before reporting again.');
+			return;
+		}
+
+		if (!channel) {
+			channel = await discord(env, '/guilds/' + env.DISCORD_GUILD_ID + '/channels', 'POST', {
+				type: 0,
+				parent_id: env.DISCORD_SUPPORT_CATEGORY_ID,
+				name: 'dissident-' + slug(target.user.username) + '-' + targetId,
+				topic: 'target:' + targetId + ' reporter:' + reporterId,
+				permission_overwrites: permissions(env, reporterId),
+			});
+		} else if (trusted) {
+			await discord(env, '/channels/' + channel.id + '/permissions/' + reporterId, 'PUT', {
+				type: 1, allow: String(VIEW_CHANNEL | SEND_MESSAGES), deny: '0',
+			});
+		}
+
+		await discord(env, '/channels/' + channel.id + '/messages', 'POST',
+			reportMessage(env, reporterId, targetId, sourceId, reason));
+
+		let roleStatus = '';
+		if (trusted) {
+			try {
+				const added = await addDissidentRole(env, targetId, reporterId);
+				roleStatus = added ? ' Dissident role assigned.' : ' Dissident role already assigned.';
+				await discord(env, '/channels/' + channel.id + '/messages', 'POST', {
+					content: '<@' + reporterId + '> ' + (added ? 'assigned' : 'confirmed') +
+						' the Dissident role for <@' + targetId + '>.',
+					allowed_mentions: { parse: [] },
+				});
+			} catch (error) {
+				console.error('Unable to assign Dissident role', error);
+				roleStatus = ' Automatic role assignment failed; moderators have been notified.';
+				await discord(env, '/channels/' + channel.id + '/messages', 'POST', {
+					content: 'Automatic role assignment failed. A moderator should review this case.',
+					allowed_mentions: { parse: [] },
+				});
+			}
+		}
+
+		const message = existing
+			? 'Thank you. This member has already been reported.'
+			: 'Thank you. Your report has been received.';
+		const access = !existing || trusted
+			? ' Case channel: <#' + channel.id + '>.'
+			: ' A moderator will reach out if needed.';
+		await updateReply(interaction, env, message + access + roleStatus);
+	} catch (error) {
+		console.error('Unable to process dissident report', error);
+		await updateReply(interaction, env, 'Unable to process your report. Please contact the moderators with /modhelp.')
+			.catch(console.error);
+	}
+}
+
+export async function onButton(interaction, env, ctx) {
+	const targetId = interaction.data.custom_id.split(':')[2];
+	const reporterId = interaction.member?.user?.id;
+	if (interaction.guild_id !== env.DISCORD_GUILD_ID || !/^\d{17,20}$/.test(targetId || '')) {
+		return reply('Invalid action.');
+	}
+	try {
+		const [moderator, channel] = await Promise.all([
+			guildMember(env, reporterId),
+			discord(env, '/channels/' + interaction.channel_id),
+		]);
+		if (!hasRole(moderator, roleList(env))) return reply('Only moderators may approve this report.');
+		if (findCase([channel], env, targetId)?.id !== interaction.channel_id) {
+			return reply('This report is no longer active.');
+		}
+	} catch (error) {
+		console.error('Unable to verify report approval', error);
+		return reply('Could not verify this report.');
+	}
+
+	ctx.waitUntil((async () => {
+		try {
+			const added = await addDissidentRole(env, targetId, reporterId);
+			await discord(env, '/channels/' + interaction.channel_id + '/messages', 'POST', {
+				content: '<@' + reporterId + '> ' + (added ? 'assigned' : 'confirmed') +
+					' the Dissident role for <@' + targetId + '>.',
+				allowed_mentions: { parse: [] },
+			});
+			await updateReply(interaction, env,
+				added ? 'Dissident role assigned.' : 'Dissident role was already assigned.');
+		} catch (error) {
+			console.error('Unable to approve dissident report', error);
+			await updateReply(interaction, env, 'Role assignment failed. Check the target and bot permissions.')
+				.catch(console.error);
+		}
+	})());
+	return defer();
 }
