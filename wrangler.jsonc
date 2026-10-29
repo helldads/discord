@@ -23,9 +23,6 @@
 			}
 		]
 	},*/
-	"observability": {
-		"enabled": true,
-	},
 	"triggers": {
 		"crons": [
 			"0 17 * * *", // daily quote
