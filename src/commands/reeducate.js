@@ -214,7 +214,7 @@ async function submitReport(interaction, env, targetId, sourceId, reason) {
 		await updateReply(interaction, env, message + access + roleStatus);
 	} catch (error) {
 		console.error('Unable to process dissident report', error);
-		await updateReply(interaction, env, 'Unable to process your report. Please contact the moderators with /modhelp.')
+		await updateReply(interaction, env, error.message === 'This member is protected by the Ministry of Truth. Please use /modhelp instead.' || error.message === 'You cannot report yourself.' || error.message === 'This member could not be found.' ? error.message : 'Unable to process your report. Please contact the moderators with /modhelp.')
 			.catch(console.error);
 	}
 }
